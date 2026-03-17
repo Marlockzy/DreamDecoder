@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 
-const FB_KEY = "AIzaSyBfMTbOmVgkkSuUQVk27zeDIVGagt_E-fE";
+const FB_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
 const FB_PROJECT = "studio-9184884157-3936a";
 const AUTH = `https://identitytoolkit.googleapis.com/v1/accounts`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
-const GEMINI_KEY = "AIzaSyBfMTbOmVgkkSuUQVk27zeDIVGagt_E-fE";
+const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 const EJS_SERVICE = "service_DreamDecoder";
 const EJS_TEMPLATE = "template_yahzaho";
