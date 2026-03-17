@@ -4,7 +4,7 @@ const FB_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
 const FB_PROJECT = "studio-9184884157-3936a";
 const AUTH = `https://identitytoolkit.googleapis.com/v1/accounts`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
-const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk"; 
+const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 const EJS_SERVICE = "service_DreamDecoder";
 const EJS_TEMPLATE = "template_yahzaho";
@@ -517,7 +517,7 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
     setBusy(true); setMsg("");
     try {
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=991498519630-b7662b1429687255fcef1f.apps.googleusercontent.com` +
+        `client_id=728040509147-q617oh6ung4m7qtgbsntqfr98uvu3mos.apps.googleusercontent.com` +
         `&redirect_uri=${encodeURIComponent(window.location.origin)}` +
         `&response_type=token&scope=email%20profile&prompt=select_account`;
       const popup = window.open(authUrl, "googleSignIn", "width=500,height=600,scrollbars=yes");
