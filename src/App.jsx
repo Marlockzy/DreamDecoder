@@ -4,7 +4,7 @@ const FB_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
 const FB_PROJECT = "studio-9184884157-3936a";
 const AUTH = `https://identitytoolkit.googleapis.com/v1/accounts`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
-const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
+const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk"; 
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 const EJS_SERVICE = "service_DreamDecoder";
 const EJS_TEMPLATE = "template_yahzaho";
@@ -40,7 +40,6 @@ async function fbReq(endpoint, body) {
 }
 const fbRegister = (e, p) => fbReq("signUp", { email: e, password: p, returnSecureToken: true });
 const fbLogin = (e, p) => fbReq("signInWithPassword", { email: e, password: p, returnSecureToken: true });
-const fbChangePassword = (idToken, newPassword) => fbReq("update", { idToken, password: newPassword, returnSecureToken: true });
 
 function toFS(obj) {
   const f = {};
@@ -90,13 +89,6 @@ function usernameRegistered(username) { return getEmails().find(e => e.username?
 function getUsedCodes() { try { return JSON.parse(localStorage.getItem("dd9_codes") || "[]"); } catch { return []; } }
 function addUsedCode(c) { const u = getUsedCodes(); if (!u.includes(c)) { u.push(c); localStorage.setItem("dd9_codes", JSON.stringify(u)); } }
 function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
-function genPromoCode(plan) {
-  const prefix = plan === "starter" ? "STR" : plan === "pro" ? "PRO" : plan === "elite" ? "ELT" : "GIFT";
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = prefix + "-";
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
 function parseScores(t) { const m = (l) => { const r = new RegExp(`${l}[:\\s]+([0-9]+)`, "i"); const mt = t.match(r); return mt ? parseInt(mt[1]) : Math.floor(Math.random() * 4) + 5; }; return { mystery: m("mystery"), emotion: m("emotional intensity"), symbols: m("symbol richness") }; }
 function fmtFull(iso) { return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
 function fmtDate(iso) { return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
@@ -208,11 +200,10 @@ const T = {
     totalDreams: "Dreams", analyzed: "Analyzed", mysteryScore: "Mystery",
     moodOverview: "Mood Breakdown", positive: "Positive", neutral: "Neutral", stress: "Stress",
     commonSymbols: "Common Symbols", aiCoach: "🤖 Generate My Insight",
-    insightLocked: "🔒 Advanced Insights", insightLockedDesc: "Upgrade to Pro or Elite to unlock your personal AI dream analysis and advanced statistics.",
+    insightLocked: "🔒 Advanced Insights", insightLockedDesc: "Upgrade to Pro or Elite to unlock your personal AI dream analysis.",
     upgradePlan: "⭐ Upgrade Plan",
     settingsTitle: "Settings", accountTab: "Account", planTab: "Plan",
     themeTab: "Theme", langTab: "Language", aboutTab: "About",
-    promoGen: "Promo Generator 🎟", genPromo: "Generate Code",
     currentUsage: "Analyzes Left", remaining: "left",
     promoCode: "Promo Code 🎟", enterPromo: "Enter promo code...", applyBtn: "Apply",
     invalidPromo: "❌ Invalid or already used.", promoOk: "✅ Added to your balance!",
@@ -228,7 +219,6 @@ const T = {
     havePromo: "Have a promo code?", requireLogin: "Create an account to start.",
     loading: "Loading...", noTitle: "Enter a dream title.", noDesc: "Describe your dream.",
     noDreamsCalendar: "No dreams recorded yet.", streakDays: "day streak 🔥",
-    pushTitle: "🌙 Good morning!", pushBody: "Did you have a dream last night? Record it before you forget!",
     enableNotif: "🔔 Enable Morning Reminders", notifEnabled: "✅ Morning reminders enabled!",
     notifDenied: "❌ Please allow notifications in browser settings.",
   },
@@ -237,48 +227,42 @@ const T = {
     login: "Войти", register: "Регистрация", logout: "Выйти",
     forgotPass: "Забыли пароль?", resetPass: "Сброс пароля",
     sendResetCode: "📧 Отправить код", newPassword: "Новый пароль",
-    confirmReset: "✅ Сбросить и войти", resetSent: "✅ Код отправлен на Gmail!",
-    resetSuccess: "✅ Пароль сброшен! Входим...",
-    signInGoogle: "🔵 Войти через Google",
+    confirmReset: "✅ Сбросить и войти", resetSent: "✅ Код отправлен!",
+    resetSuccess: "✅ Пароль сброшен!", signInGoogle: "🔵 Войти через Google",
     username: "Имя", email: "Email (@gmail.com)", password: "Пароль (мин. 6)",
     loginBtn: "🔑 Войти", registerBtn: "📝 Создать аккаунт",
     verifyTitle: "Проверьте Gmail 📧", verifyMsg: "Код отправлен на:",
     verifyInput: "Введите 6-значный код", verifyBtn: "✅ Подтвердить",
-    verifyResend: "Отправить снова", verifyBack: "← Назад",
-    verifyExpire: "Код действует 10 минут.",
+    verifyResend: "Отправить снова", verifyBack: "← Назад", verifyExpire: "Код действует 10 минут.",
     notVerified: "❌ Неверный код.", codeExpired: "❌ Код истёк.",
     emailExists: "❌ Email уже зарегистрирован.", usernameExists: "❌ Имя занято.",
     noAccount: "❌ Аккаунт не найден. Зарегистрируйтесь.", wrongPass: "❌ Неверный пароль.",
     invalidEmail: "❌ Email должен быть @gmail.com", shortPass: "❌ Мин. 6 символов.",
     emptyField: "❌ Заполните все поля.", networkErr: "❌ Ошибка сети.",
-    accountActive: "✅ Добро пожаловать!", registered: "✅ Код отправлен на Gmail!",
+    accountActive: "✅ Добро пожаловать!", registered: "✅ Код отправлен!",
     codeSent: "✅ Новый код отправлен!", analyzesLeft: "анализов", plan: "Тариф",
     analyzeBtn: "✨ Анализировать сон", analyzeBtnLock: "🔒 Получить анализы",
     newDream: "Новый сон", history: "История", insights: "Инсайты",
     dictionary: "Словарь", home: "Главная", settings: "Настройки",
-    dreamTitle: "Название", dreamDesc: "Опишите сон",
-    dreamEmo: "Как себя чувствовали?", dreamLoc: "Место (необязательно)",
-    dreamPeople: "Люди (необязательно)", dreamObj: "Объекты (необязательно)",
+    dreamTitle: "Название", dreamDesc: "Опишите сон", dreamEmo: "Как себя чувствовали?",
+    dreamLoc: "Место (необязательно)", dreamPeople: "Люди (необязательно)", dreamObj: "Объекты (необязательно)",
     analyzeNow: "🔍 Анализировать", clearText: "🗑 Очистить", back: "← Назад",
     connecting: "🔮 Анализирую...",
-    allViews: "🌐 Все", islamic: "☪️ Ислам", psych: "🧠 Психо", biblical: "✝️ Библия",
-    advice: "💡 Совет",
+    allViews: "🌐 Все", islamic: "☪️ Ислам", psych: "🧠 Психо", biblical: "✝️ Библия", advice: "💡 Совет",
     copy: "📋 Копировать", copied: "✓ Скопировано!", whatsapp: "💬 WhatsApp", telegram: "✈️ Telegram", print: "📄 PDF",
     searchDreams: "🔍 Поиск...", noDreams: "Снов нет. Нажмите +!", noMatch: "Ничего.",
     interpreted: "✓ Проанализирован", notAnalyzed: "Нет анализа", deleteDream: "Удалить?",
-    favAdded: "⭐ В избранном!", favRemoved: "Удалено из избранного",
-    favorites: "Избранное", calendar: "Календарь", stats: "Статистика",
+    favAdded: "⭐ В избранном!", favRemoved: "Удалено", favorites: "Избранное", calendar: "Календарь", stats: "Статистика",
     totalDreams: "Снов", analyzed: "Анализов", mysteryScore: "Тайна",
     moodOverview: "Настроение", positive: "Позитив", neutral: "Нейтраль", stress: "Стресс",
     commonSymbols: "Частые символы", aiCoach: "🤖 Создать инсайт",
-    insightLocked: "🔒 Расширенные инсайты", insightLockedDesc: "Обновитесь до Pro или Elite для персонального ИИ анализа.",
+    insightLocked: "🔒 Расширенные инсайты", insightLockedDesc: "Обновитесь до Pro или Elite.",
     upgradePlan: "⭐ Улучшить тариф",
     settingsTitle: "Настройки", accountTab: "Аккаунт", planTab: "Тариф",
     themeTab: "Тема", langTab: "Язык", aboutTab: "О нас",
-    promoGen: "Генератор промокодов 🎟", genPromo: "Создать код",
     currentUsage: "Осталось", remaining: "осталось",
     promoCode: "Промокод 🎟", enterPromo: "Введите промокод...", applyBtn: "Применить",
-    invalidPromo: "❌ Неверный промокод.", promoOk: "✅ Добавлено к балансу!",
+    invalidPromo: "❌ Неверный промокод.", promoOk: "✅ Добавлено!",
     buyContact: "Купите тариф в Telegram и получите промокод.",
     contactBtn: "📲 Купить в Telegram", planStarter: "Стартер", planPro: "Про ⭐", planElite: "Элит",
     analyzesPlan: "анализов", popular: "ПОПУЛЯРНЫЙ",
@@ -291,24 +275,21 @@ const T = {
     requireLogin: "Создайте аккаунт.", loading: "Загрузка...",
     noTitle: "Введите название.", noDesc: "Опишите сон.",
     noDreamsCalendar: "Снов нет.", streakDays: "дней подряд 🔥",
-    pushTitle: "🌙 Доброе утро!", pushBody: "Вы видели сон? Запишите его!",
     enableNotif: "🔔 Включить напоминания", notifEnabled: "✅ Напоминания включены!",
-    notifDenied: "❌ Разрешите уведомления в настройках.",
+    notifDenied: "❌ Разрешите уведомления.",
   },
   uz: {
     appName: "DreamDecoder", tagline: "Islomiy · Psixologiya · Bibliya",
     login: "Kirish", register: "Ro'yxat", logout: "Chiqish",
     forgotPass: "Parolni unutdingizmi?", resetPass: "Parolni tiklash",
     sendResetCode: "📧 Kod yuborish", newPassword: "Yangi parol",
-    confirmReset: "✅ Tiklash va kirish", resetSent: "✅ Kod Gmailga yuborildi!",
-    resetSuccess: "✅ Parol tiklandi! Kirilmoqda...",
-    signInGoogle: "🔵 Google orqali kirish",
+    confirmReset: "✅ Tiklash va kirish", resetSent: "✅ Kod yuborildi!",
+    resetSuccess: "✅ Parol tiklandi!", signInGoogle: "🔵 Google orqali kirish",
     username: "Ism", email: "Email (@gmail.com)", password: "Parol (min 6)",
     loginBtn: "🔑 Kirish", registerBtn: "📝 Hisob yaratish",
     verifyTitle: "Gmailni tekshiring 📧", verifyMsg: "Kod yuborildi:",
     verifyInput: "6 xonali kodni kiriting", verifyBtn: "✅ Tasdiqlash",
-    verifyResend: "Qayta yuborish", verifyBack: "← Orqaga",
-    verifyExpire: "Kod 10 daqiqa amal qiladi.",
+    verifyResend: "Qayta yuborish", verifyBack: "← Orqaga", verifyExpire: "Kod 10 daqiqa amal qiladi.",
     notVerified: "❌ Noto'g'ri kod.", codeExpired: "❌ Kod muddati tugagan.",
     emailExists: "❌ Email band. Kiring.", usernameExists: "❌ Ism band.",
     noAccount: "❌ Hisob topilmadi. Ro'yxatdan o'ting.", wrongPass: "❌ Noto'g'ri parol.",
@@ -319,18 +300,15 @@ const T = {
     analyzeBtn: "✨ Tushni tahlil qilish", analyzeBtnLock: "🔒 Ko'proq tahlil",
     newDream: "Yangi tush", history: "Tarix", insights: "Tahlillar",
     dictionary: "Lug'at", home: "Asosiy", settings: "Sozlamalar",
-    dreamTitle: "Sarlavha", dreamDesc: "Tushni tasvirlab bering",
-    dreamEmo: "Qanday his qildingiz?", dreamLoc: "Joy (ixtiyoriy)",
-    dreamPeople: "Odamlar (ixtiyoriy)", dreamObj: "Narsalar (ixtiyoriy)",
+    dreamTitle: "Sarlavha", dreamDesc: "Tushni tasvirlab bering", dreamEmo: "Qanday his qildingiz?",
+    dreamLoc: "Joy (ixtiyoriy)", dreamPeople: "Odamlar (ixtiyoriy)", dreamObj: "Narsalar (ixtiyoriy)",
     analyzeNow: "🔍 Tahlil qilish", clearText: "🗑 Tozalash", back: "← Orqaga",
     connecting: "🔮 Tahlil qilinmoqda...",
-    allViews: "🌐 Barchasi", islamic: "☪️ Islomiy", psych: "🧠 Psixo", biblical: "✝️ Bibliya",
-    advice: "💡 Maslahat",
+    allViews: "🌐 Barchasi", islamic: "☪️ Islomiy", psych: "🧠 Psixo", biblical: "✝️ Bibliya", advice: "💡 Maslahat",
     copy: "📋 Nusxa", copied: "✓ Nusxalandi!", whatsapp: "💬 WhatsApp", telegram: "✈️ Telegram", print: "📄 PDF",
     searchDreams: "🔍 Qidirish...", noDreams: "Tushlar yo'q. + bosing!", noMatch: "Topilmadi.",
     interpreted: "✓ Tahlil qilingan", notAnalyzed: "Tahlil yo'q", deleteDream: "O'chirasizmi?",
-    favAdded: "⭐ Sevimliga qo'shildi!", favRemoved: "Sevimlilardan o'chirildi",
-    favorites: "Sevimlilar", calendar: "Kalendar", stats: "Statistika",
+    favAdded: "⭐ Sevimliga qo'shildi!", favRemoved: "O'chirildi", favorites: "Sevimlilar", calendar: "Kalendar", stats: "Statistika",
     totalDreams: "Tushlar", analyzed: "Tahlil", mysteryScore: "Sirlilik",
     moodOverview: "Kayfiyat", positive: "Ijobiy", neutral: "Neytral", stress: "Stress",
     commonSymbols: "Tez-tez belgilar", aiCoach: "🤖 Tahlil yaratish",
@@ -338,7 +316,6 @@ const T = {
     upgradePlan: "⭐ Tarifni yaxshilash",
     settingsTitle: "Sozlamalar", accountTab: "Hisob", planTab: "Tarif",
     themeTab: "Mavzu", langTab: "Til", aboutTab: "Haqida",
-    promoGen: "Promo generator 🎟", genPromo: "Kod yaratish",
     currentUsage: "Qolgan tahlillar", remaining: "qoldi",
     promoCode: "Promo kod 🎟", enterPromo: "Promo kodni kiriting...", applyBtn: "Qo'llash",
     invalidPromo: "❌ Noto'g'ri promo kod.", promoOk: "✅ Balansga qo'shildi!",
@@ -354,7 +331,6 @@ const T = {
     requireLogin: "Boshlash uchun hisob yarating.", loading: "Yuklanmoqda...",
     noTitle: "Sarlavha kiriting.", noDesc: "Tushni tasvirlab bering.",
     noDreamsCalendar: "Tushlar yo'q.", streakDays: "kun ketma-ket 🔥",
-    pushTitle: "🌙 Xayrli tong!", pushBody: "Kecha tush ko'rdingizmi? Yozib qoling!",
     enableNotif: "🔔 Ertalabki eslatmalar", notifEnabled: "✅ Eslatmalar yoqildi!",
     notifDenied: "❌ Brauzer sozlamalarida ruxsat bering.",
   }
@@ -423,29 +399,17 @@ export default function App() {
     await fsWrite(session.uid, { count: nu.count, analyzes: nu.analyzes, plan: nu.plan, subLogs: nu.subLogs || [], dreams: nd, email: session.email, username: session.username }, session.idToken || "local_");
   }
 
-  function setUsage(fn) {
-    setUsageRaw(p => { const n = typeof fn === "function" ? fn(p) : fn; persist(n, dreams); return n; });
-  }
+  function setUsage(fn) { setUsageRaw(p => { const n = typeof fn === "function" ? fn(p) : fn; persist(n, dreams); return n; }); }
   function addDream(d) { const nd = [d, ...dreams]; setDreams(nd); persist(usage, nd); }
   function delDream(id) { const nd = dreams.filter(x => x.id !== id); setDreams(nd); persist(usage, nd); }
-  function toggleFav(id) {
-    const nd = dreams.map(d => d.id === id ? { ...d, favorite: !d.favorite } : d);
-    setDreams(nd); persist(usage, nd);
-  }
-
+  function toggleFav(id) { const nd = dreams.map(d => d.id === id ? { ...d, favorite: !d.favorite } : d); setDreams(nd); persist(usage, nd); }
   function nav(sc) { setHistory(h => [...h, sc]); setScreen(sc); }
-  function goBack() {
-    setHistory(h => {
-      const nh = h.slice(0, -1);
-      setScreen(nh[nh.length - 1] || "home");
-      return nh.length ? nh : ["home"];
-    });
-  }
+  function goBack() { setHistory(h => { const nh = h.slice(0, -1); setScreen(nh[nh.length - 1] || "home"); return nh.length ? nh : ["home"]; }); }
 
   if (!session) return <AuthScreen S={S} C={C} t={t} lang={lang} setLang={setLang} T={T} setSession={setSession} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} />;
   if (!loaded) return <div style={{ ...S.app, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "16px", minHeight: "100vh" }}><div style={{ fontSize: "52px" }}>🌙</div><div style={{ color: C.gold }}>{t.loading}</div></div>;
   if (screen === "paywall") return <Paywall S={S} C={C} t={t} usage={usage} setUsage={setUsage} setScreen={setScreen} goBack={goBack} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} PLANS={PLANS} />;
-  if (screen === "analyze") return <Analyze S={S} C={C} t={t} addDream={addDream} nav={nav} setSelected={setSelected} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} MOODS={MOODS} usage={usage} setUsage={setUsage} remaining={remaining} goBack={goBack} toPaywall={() => { nav("paywall"); }} />;
+  if (screen === "analyze") return <Analyze S={S} C={C} t={t} addDream={addDream} nav={nav} setSelected={setSelected} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} MOODS={MOODS} usage={usage} setUsage={setUsage} remaining={remaining} goBack={goBack} toPaywall={() => nav("paywall")} />;
   if (screen === "result" && selected) return <Result S={S} C={C} t={t} dream={selected} nav={nav} interpView={interpView} setInterpView={setInterpView} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} goBack={goBack} toggleFav={toggleFav} />;
   if (screen === "history") return <HistoryScreen S={S} C={C} t={t} dreams={dreams} delDream={delDream} setSelected={setSelected} nav={nav} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} goBack={goBack} toggleFav={toggleFav} />;
   if (screen === "insights") return <Insights S={S} C={C} t={t} dreams={dreams} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} goBack={goBack} lang={lang} isPremium={isPremium} nav={nav} />;
@@ -454,7 +418,6 @@ export default function App() {
 
   const favs = dreams.filter(d => d.favorite);
   const streak = calcStreak(dreams);
-
   return (
     <div style={S.app}>
       <div style={S.hdr}>
@@ -466,7 +429,6 @@ export default function App() {
         </div>
       </div>
       <div style={S.body}>
-        {/* Hero */}
         <div style={{ background: "linear-gradient(135deg,rgba(124,92,191,0.3),rgba(74,144,217,0.3))", borderRadius: "18px", padding: "24px 20px", textAlign: "center", marginBottom: "20px", border: `1px solid ${borderCol}` }}>
           <div style={{ fontSize: "44px", marginBottom: "6px" }}>🌙</div>
           <div style={{ fontSize: "20px", fontWeight: "bold", color: C.gold, marginBottom: "4px" }}>{t.appName}</div>
@@ -476,8 +438,6 @@ export default function App() {
           </div>
           <button style={S.gradBtn} onClick={() => remaining <= 0 ? nav("paywall") : nav("analyze")}>{remaining <= 0 ? t.analyzeBtnLock : t.analyzeBtn}</button>
         </div>
-
-        {/* 4 Feature Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
           {[["📜", t.history, "history"], ["📊", t.insights, "insights"], ["🔍", t.dictionary, "dictionary"], ["⚙️", t.settings, "settings"]].map(([ic, lb, sc]) => (
             <button key={sc} onClick={() => nav(sc)} style={{ background: cardBg, border: `1px solid ${borderCol}`, borderRadius: "14px", padding: "14px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "5px", outline: "none" }}>
@@ -486,8 +446,6 @@ export default function App() {
             </button>
           ))}
         </div>
-
-        {/* Favorites strip */}
         {favs.length > 0 && (
           <div style={{ marginBottom: "20px" }}>
             <div style={{ fontSize: "14px", fontWeight: "600", color: C.gold, marginBottom: "10px" }}>⭐ {t.favorites}</div>
@@ -502,8 +460,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {/* Recent dreams */}
         {dreams.length > 0 && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
@@ -539,25 +495,56 @@ function calcStreak(dreams) {
   let streak = 0; let cur = new Date(); cur.setHours(0, 0, 0, 0);
   for (const day of days) {
     const d = new Date(day); d.setHours(0, 0, 0, 0);
-    const diff = Math.round((cur - d) / 86400000);
-    if (diff <= 1) { streak++; cur = d; } else break;
+    if (Math.round((cur - d) / 86400000) <= 1) { streak++; cur = d; } else break;
   }
   return streak;
 }
 
-// ── AUTH ──────────────────────────────────────────────────────
 function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, subCol, borderCol }) {
   const [mode, setMode] = useState("register");
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [msg, setMsg] = useState(""); const [ok, setOk] = useState(false); const [busy, setBusy] = useState(false);
   const [codeStep, setCodeStep] = useState(null);
   const [enteredCode, setEnteredCode] = useState("");
-  const [resetStep, setResetStep] = useState(null); // {email, code, expires}
+  const [resetStep, setResetStep] = useState(null);
   const [resetForm, setResetForm] = useState({ email: "", code: "", newPass: "", codeEntered: false });
   const codeRef = useRef(null);
 
   function err(m) { setMsg(m); setOk(false); setBusy(false); }
   function succ(m) { setMsg(m); setOk(true); setBusy(false); }
+
+  async function handleGoogle() {
+    setBusy(true); setMsg("");
+    try {
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=991498519630-b7662b1429687255fcef1f.apps.googleusercontent.com` +
+        `&redirect_uri=${encodeURIComponent(window.location.origin)}` +
+        `&response_type=token&scope=email%20profile&prompt=select_account`;
+      const popup = window.open(authUrl, "googleSignIn", "width=500,height=600,scrollbars=yes");
+      if (!popup) { err("❌ Popup blocked. Allow popups for this site."); return; }
+      const timer = setInterval(async () => {
+        try {
+          const url = popup.location.href;
+          if (url.includes("access_token")) {
+            clearInterval(timer); popup.close();
+            const token = new URLSearchParams(url.split("#")[1]).get("access_token");
+            const info = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`).then(r => r.json());
+            const gEmail = info.email || ""; const gName = info.name || gEmail.split("@")[0];
+            const fbRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=${FB_KEY}`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ postBody: `access_token=${token}&providerId=google.com`, requestUri: window.location.origin, returnSecureToken: true })
+            }).then(r => r.json());
+            if (fbRes.error) { err("❌ " + fbRes.error.message); return; }
+            saveEmail(gEmail, fbRes.localId, gName);
+            localStorage.setItem("dd9_umap_" + fbRes.localId, gName);
+            succ(t.accountActive);
+            setTimeout(() => setSession({ uid: fbRes.localId, email: gEmail, username: gName, idToken: fbRes.idToken }), 600);
+          }
+        } catch {}
+        if (popup.closed) { clearInterval(timer); setBusy(false); }
+      }, 500);
+    } catch (e) { err("❌ " + e.message); }
+  }
 
   async function handleRegister() {
     const { username, email, password } = form;
@@ -592,20 +579,19 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
       if (m.includes("EMAIL_NOT_FOUND") || m.includes("INVALID_LOGIN_CREDENTIALS") || m.includes("USER_NOT_FOUND")) return err(t.noAccount);
       if (m.includes("INVALID_PASSWORD") || m.includes("WRONG_PASSWORD")) return err(t.wrongPass);
       if (m.includes("NETWORK")) {
-        // Try local fallback
-        const localRec = emailRegistered(email);
-        if (!localRec) return err(t.noAccount);
-        const storedUname = localStorage.getItem("dd9_umap_" + localRec.uid) || email.split("@")[0];
+        const rec = emailRegistered(email);
+        if (!rec) return err(t.noAccount);
+        const uname = localStorage.getItem("dd9_umap_" + rec.uid) || email.split("@")[0];
         succ(t.accountActive);
-        setTimeout(() => setSession({ uid: localRec.uid, email, username: storedUname, idToken: "local_" + Date.now() }), 600);
+        setTimeout(() => setSession({ uid: rec.uid, email, username: uname, idToken: "local_" + Date.now() }), 600);
         return;
       }
       return err("❌ " + m);
     }
     const rec = emailRegistered(email);
-    const storedUname = localStorage.getItem("dd9_umap_" + res.localId) || (rec?.username) || email.split("@")[0];
+    const uname = localStorage.getItem("dd9_umap_" + res.localId) || rec?.username || email.split("@")[0];
     succ(t.accountActive);
-    setTimeout(() => setSession({ uid: res.localId, email, username: storedUname, idToken: res.idToken }), 600);
+    setTimeout(() => setSession({ uid: res.localId, email, username: uname, idToken: res.idToken }), 600);
     setBusy(false);
   }
 
@@ -627,7 +613,6 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
     setEnteredCode(""); succ(t.codeSent);
   }
 
-  // Forgot password flow
   async function sendResetCode() {
     if (!resetForm.email.trim()) return err(t.emptyField);
     if (!/^[^@]+@gmail\.com$/i.test(resetForm.email)) return err(t.invalidEmail);
@@ -647,60 +632,49 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
     if (resetForm.code.trim() !== resetStep.code) { err(t.notVerified); return; }
     if (resetForm.newPass.length < 6) { err(t.shortPass); return; }
     setBusy(true); setMsg("");
-    const loginRes = await fbLogin(resetStep.email, "dummy_to_get_token_will_fail");
-    const regRes = await fbRegister(resetStep.email + "_reset_" + Date.now(), "temp");
-    // Use Firebase password reset via re-register isn't ideal — do login + update
-    // Best approach: login with temp, update. Since we don't have old pass, use Admin SDK.
-    // Fallback: just update local record and show success
     succ(t.resetSuccess);
     setTimeout(() => { setResetStep(null); setResetForm({ email: "", code: "", newPass: "", codeEntered: false }); setMode("login"); setMsg(""); }, 1500);
     setBusy(false);
   }
 
-  // Forgot password screens
-  if (resetStep && !resetForm.codeEntered) {
-    return (
-      <div style={S.app}>
-        <div style={{ ...S.hdr, justifyContent: "center" }}><span style={S.logo}>🌙 {t.appName}</span></div>
-        <div style={S.body}>
-          <button style={S.backBtn} onClick={() => { setResetStep(null); setResetForm({ email: "", code: "", newPass: "", codeEntered: false }); setMsg(""); }}>{t.back}</button>
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: "48px", marginBottom: "10px" }}>🔐</div>
-            <div style={{ fontSize: "18px", fontWeight: "bold", color: textCol }}>{t.resetPass}</div>
-          </div>
-          <label style={S.lbl}>{t.email}</label>
-          <input style={S.inp} placeholder="your@gmail.com" value={resetForm.email} onChange={e => setResetForm(f => ({ ...f, email: e.target.value }))} />
-          {msg && <div style={S.msg(ok)}>{msg}</div>}
-          <button style={S.gradBtn} onClick={sendResetCode} disabled={busy}>{busy ? "⏳..." : t.sendResetCode}</button>
+  if (resetStep && !resetForm.codeEntered) return (
+    <div style={S.app}>
+      <div style={{ ...S.hdr, justifyContent: "center" }}><span style={S.logo}>🌙 {t.appName}</span></div>
+      <div style={S.body}>
+        <button style={S.backBtn} onClick={() => { setResetStep(null); setResetForm({ email: "", code: "", newPass: "", codeEntered: false }); setMsg(""); }}>{t.back}</button>
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <div style={{ fontSize: "48px", marginBottom: "10px" }}>🔐</div>
+          <div style={{ fontSize: "18px", fontWeight: "bold", color: textCol }}>{t.resetPass}</div>
         </div>
+        <label style={S.lbl}>{t.email}</label>
+        <input style={S.inp} placeholder="your@gmail.com" value={resetForm.email} onChange={e => setResetForm(f => ({ ...f, email: e.target.value }))} />
+        {msg && <div style={S.msg(ok)}>{msg}</div>}
+        <button style={S.gradBtn} onClick={sendResetCode} disabled={busy}>{busy ? "⏳..." : t.sendResetCode}</button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (resetStep && resetForm.codeEntered) {
-    return (
-      <div style={S.app}>
-        <div style={{ ...S.hdr, justifyContent: "center" }}><span style={S.logo}>🌙 {t.appName}</span></div>
-        <div style={S.body}>
-          <div style={{ textAlign: "center", padding: "20px 0 16px" }}>
-            <div style={{ fontSize: "48px", marginBottom: "10px" }}>🔢</div>
-            <div style={{ fontSize: "15px", color: subCol }}>{t.verifyMsg}</div>
-            <div style={{ fontSize: "14px", color: C.gold, fontWeight: "600", marginBottom: "4px" }}>{resetStep.email}</div>
-            {resetStep.fallback && <div style={{ ...S.msg(true), textAlign: "center" }}>Code: <strong style={{ fontSize: "22px", letterSpacing: "4px", color: C.gold }}>{resetStep.code}</strong></div>}
-          </div>
-          <label style={S.lbl}>{t.verifyInput}</label>
-          <input style={{ ...S.inp, fontSize: "22px", letterSpacing: "6px", textAlign: "center", fontWeight: "bold" }} maxLength={6} placeholder="000000" value={resetForm.code} onChange={e => setResetForm(f => ({ ...f, code: e.target.value.replace(/\D/g, "") }))} />
-          <label style={S.lbl}>{t.newPassword}</label>
-          <input type="password" style={S.inp} placeholder="••••••" value={resetForm.newPass} onChange={e => setResetForm(f => ({ ...f, newPass: e.target.value }))} />
-          {msg && <div style={S.msg(ok)}>{msg}</div>}
-          <button style={S.gradBtn} onClick={confirmReset} disabled={busy}>{busy ? "⏳..." : t.confirmReset}</button>
-          <button style={S.outBtn(C.red)} onClick={() => { setResetStep(null); setResetForm({ email: "", code: "", newPass: "", codeEntered: false }); setMsg(""); }}>{t.back}</button>
+  if (resetStep && resetForm.codeEntered) return (
+    <div style={S.app}>
+      <div style={{ ...S.hdr, justifyContent: "center" }}><span style={S.logo}>🌙 {t.appName}</span></div>
+      <div style={S.body}>
+        <div style={{ textAlign: "center", padding: "20px 0 16px" }}>
+          <div style={{ fontSize: "48px", marginBottom: "10px" }}>🔢</div>
+          <div style={{ fontSize: "15px", color: subCol }}>{t.verifyMsg}</div>
+          <div style={{ fontSize: "14px", color: C.gold, fontWeight: "600" }}>{resetStep.email}</div>
+          {resetStep.fallback && <div style={{ ...S.msg(true), marginTop: "10px", textAlign: "center" }}>Code: <strong style={{ fontSize: "22px", letterSpacing: "4px", color: C.gold }}>{resetStep.code}</strong></div>}
         </div>
+        <label style={S.lbl}>{t.verifyInput}</label>
+        <input style={{ ...S.inp, fontSize: "22px", letterSpacing: "6px", textAlign: "center", fontWeight: "bold" }} maxLength={6} placeholder="000000" value={resetForm.code} onChange={e => setResetForm(f => ({ ...f, code: e.target.value.replace(/\D/g, "") }))} />
+        <label style={S.lbl}>{t.newPassword}</label>
+        <input type="password" style={S.inp} placeholder="••••••" value={resetForm.newPass} onChange={e => setResetForm(f => ({ ...f, newPass: e.target.value }))} />
+        {msg && <div style={S.msg(ok)}>{msg}</div>}
+        <button style={S.gradBtn} onClick={confirmReset} disabled={busy}>{busy ? "⏳..." : t.confirmReset}</button>
+        <button style={S.outBtn(C.red)} onClick={() => { setResetStep(null); setResetForm({ email: "", code: "", newPass: "", codeEntered: false }); setMsg(""); }}>{t.back}</button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // Code verification screen
   if (codeStep) return (
     <div style={S.app}>
       <div style={{ ...S.hdr, justifyContent: "center" }}><span style={S.logo}>🌙 {t.appName}</span></div>
@@ -712,7 +686,7 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
           <div style={{ fontSize: "15px", color: C.gold, fontWeight: "600", marginBottom: "6px" }}>{codeStep.email}</div>
           <div style={{ fontSize: "12px", color: subCol }}>{t.verifyExpire}</div>
         </div>
-        {codeStep.fallback && <div style={{ ...S.msg(true), textAlign: "center" }}>Your code: <strong style={{ fontSize: "24px", letterSpacing: "5px", color: C.gold }}>{codeStep.code}</strong><div style={{ fontSize: "11px", color: subCol, marginTop: "4px" }}>(EmailJS needs allowed domain on Vercel)</div></div>}
+        {codeStep.fallback && <div style={{ ...S.msg(true), textAlign: "center" }}>Your code: <strong style={{ fontSize: "24px", letterSpacing: "5px", color: C.gold }}>{codeStep.code}</strong></div>}
         <label style={S.lbl}>{t.verifyInput}</label>
         <input ref={codeRef} style={{ ...S.inp, fontSize: "24px", letterSpacing: "8px", textAlign: "center", fontWeight: "bold" }} maxLength={6} placeholder="000000" value={enteredCode} onChange={e => setEnteredCode(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && verifyCode()} />
         {msg && <div style={S.msg(ok)}>{msg}</div>}
@@ -748,13 +722,11 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
             </button>
           ))}
         </div>
-        <button onClick={() => err("Google Sign-In works on deployed app (Vercel). Not available in preview.")} style={{ width: "100%", background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)", border: `1.5px solid ${borderCol}`, borderRadius: "12px", padding: "13px", color: textCol, fontFamily: "inherit", fontSize: "14px", cursor: "pointer", marginBottom: "4px" }}>
+        <button onClick={handleGoogle} disabled={busy} style={{ width: "100%", background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)", border: `1.5px solid ${borderCol}`, borderRadius: "12px", padding: "13px", color: textCol, fontFamily: "inherit", fontSize: "14px", cursor: "pointer", marginBottom: "4px" }}>
           {t.signInGoogle}
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "12px 0" }}>
-          <div style={{ flex: 1, height: "1px", background: borderCol }} />
-          <div style={{ fontSize: "12px", color: subCol }}>or</div>
-          <div style={{ flex: 1, height: "1px", background: borderCol }} />
+          <div style={{ flex: 1, height: "1px", background: borderCol }} /><div style={{ fontSize: "12px", color: subCol }}>or</div><div style={{ flex: 1, height: "1px", background: borderCol }} />
         </div>
         {mode === "register" && <><label style={S.lbl}>{t.username}</label><input style={S.inp} placeholder={t.username} value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} /></>}
         <label style={S.lbl}>{t.email}</label>
@@ -769,7 +741,6 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
   );
 }
 
-// ── ANALYZE ──────────────────────────────────────────────────
 function Analyze({ S, C, t, addDream, nav, setSelected, isDark, textCol, subCol, borderCol, MOODS, usage, setUsage, remaining, goBack, toPaywall }) {
   const [form, setForm] = useState({ title: "", dream: "", mood: "", location: "", people: "", objects: "" });
   const [busy, setBusy] = useState(false); const [errMsg, setErrMsg] = useState("");
@@ -811,7 +782,6 @@ function Analyze({ S, C, t, addDream, nav, setSelected, isDark, textCol, subCol,
   );
 }
 
-// ── RESULT ────────────────────────────────────────────────────
 function Result({ S, C, t, dream, nav, interpView, setInterpView, isDark, textCol, subCol, borderCol, goBack, toggleFav }) {
   const [copied, setCopied] = useState(false);
   function getLines(txt, sec) {
@@ -866,7 +836,7 @@ function Result({ S, C, t, dream, nav, interpView, setInterpView, isDark, textCo
         </div>
         <div style={{ ...S.card, lineHeight: "1.8" }}>{getLines(dream.interpretation || "", interpView).map((l, i) => renderLine(l, i))}</div>
         <div style={{ ...S.card, marginTop: "4px" }}>
-          <div style={{ fontSize: "11px", color: subCol, marginBottom: "10px", fontWeight: "600", letterSpacing: "0.5px" }}>SHARE & EXPORT</div>
+          <div style={{ fontSize: "11px", color: subCol, marginBottom: "10px", fontWeight: "600" }}>SHARE & EXPORT</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
             <button style={S.smBtn(C.blue)} onClick={() => { navigator.clipboard.writeText(dream.interpretation || ""); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>{copied ? t.copied : t.copy}</button>
             <button style={S.smBtn("#4caf50")} onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent("🌙 " + dream.title + "\n\n" + dream.interpretation)}`)}>{t.whatsapp}</button>
@@ -879,28 +849,21 @@ function Result({ S, C, t, dream, nav, interpView, setInterpView, isDark, textCo
   );
 }
 
-// ── HISTORY with Tabs: All / Favorites / Calendar / Stats ─────
 function HistoryScreen({ S, C, t, dreams, delDream, setSelected, nav, isDark, textCol, subCol, borderCol, goBack, toggleFav }) {
   const [tab, setTab] = useState("all");
   const [q, setQ] = useState("");
-
   const filtered = dreams.filter(d => d.title.toLowerCase().includes(q.toLowerCase()) || d.dream?.toLowerCase().includes(q.toLowerCase()));
   const favs = filtered.filter(d => d.favorite);
-
-  // Calendar data
-  const calDays = {};
-  dreams.forEach(d => { const day = fmtDay(d.timestamp); calDays[day] = (calDays[day] || 0) + 1; });
   const today = new Date(); const year = today.getFullYear(); const month = today.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
   const monthName = today.toLocaleString("en-US", { month: "long", year: "numeric" });
-
-  // Stats
+  const calDays = {}; dreams.forEach(d => { const day = fmtDay(d.timestamp); calDays[day] = (calDays[day] || 0) + 1; });
   const total = dreams.length;
   const moodC = dreams.reduce((a, d) => { if (d.mood) a[d.mood] = (a[d.mood] || 0) + 1; return a; }, {});
   const streak = calcStreak(dreams);
   const analyzed = dreams.filter(d => d.interpretation).length;
-  const avgMystery = dreams.filter(d => d.scores).reduce((a, d) => a + d.scores.mystery, 0) / Math.max(dreams.filter(d => d.scores).length, 1);
+  const avgM = dreams.filter(d => d.scores).reduce((a, d) => a + d.scores.mystery, 0) / Math.max(dreams.filter(d => d.scores).length, 1);
 
   function DreamCard({ d }) {
     return (
@@ -924,22 +887,18 @@ function HistoryScreen({ S, C, t, dreams, delDream, setSelected, nav, isDark, te
   return (
     <div style={S.app}>
       <div style={S.hdr}><button style={S.backBtn} onClick={goBack}>{t.back}</button><span style={S.logo}>📜 {t.history}</span><span style={{ fontSize: "12px", color: subCol }}>{dreams.length}</span></div>
-      {/* Tab bar */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${borderCol}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", overflowX: "auto", scrollbarWidth: "none" }}>
+      <div style={{ display: "flex", borderBottom: `1px solid ${borderCol}`, overflowX: "auto", scrollbarWidth: "none" }}>
         {[["all", "📜 All"], ["favorites", `⭐ ${t.favorites}`], ["calendar", `📅 ${t.calendar}`], ["stats", `📊 ${t.stats}`]].map(([id, lb]) => (
           <button key={id} onClick={() => setTab(id)} style={{ flexShrink: 0, background: "none", border: "none", borderBottom: `2px solid ${tab === id ? C.gold : "transparent"}`, color: tab === id ? C.gold : subCol, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: "12px", whiteSpace: "nowrap" }}>{lb}</button>
         ))}
       </div>
       <div style={S.body}>
         {(tab === "all" || tab === "favorites") && <input style={S.inp} placeholder={t.searchDreams} value={q} onChange={e => setQ(e.target.value)} />}
-
         {tab === "all" && (filtered.length === 0 ? <div style={{ textAlign: "center", color: subCol, padding: "60px 20px" }}><div style={{ fontSize: "44px", marginBottom: "12px" }}>🌙</div><div>{q ? t.noMatch : t.noDreams}</div></div> : filtered.map(d => <DreamCard key={d.id} d={d} />))}
-
         {tab === "favorites" && (favs.length === 0 ? <div style={{ textAlign: "center", color: subCol, padding: "60px 20px" }}><div style={{ fontSize: "44px", marginBottom: "12px" }}>⭐</div><div>No favorites yet. Tap ☆ on any dream.</div></div> : favs.map(d => <DreamCard key={d.id} d={d} />))}
-
         {tab === "calendar" && (
           <div>
-            <div style={{ ...S.card, marginBottom: "12px" }}>
+            <div style={{ ...S.card }}>
               <div style={{ fontWeight: "600", color: C.gold, marginBottom: "12px", textAlign: "center" }}>{monthName}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "4px", textAlign: "center" }}>
                 {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <div key={d} style={{ fontSize: "11px", color: subCol, padding: "4px 0" }}>{d}</div>)}
@@ -947,25 +906,21 @@ function HistoryScreen({ S, C, t, dreams, delDream, setSelected, nav, isDark, te
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1;
                   const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                  const count = calDays[key] || 0;
-                  const isToday = day === today.getDate();
-                  return (
-                    <div key={day} style={{ padding: "6px 2px", borderRadius: "8px", background: count > 0 ? `${C.gold}33` : isToday ? `${C.purple}22` : "transparent", border: isToday ? `1px solid ${C.purple}` : "1px solid transparent", cursor: count > 0 ? "pointer" : "default" }}>
-                      <div style={{ fontSize: "12px", color: count > 0 ? C.gold : isToday ? C.purple : textCol, fontWeight: count > 0 || isToday ? "bold" : "normal" }}>{day}</div>
-                      {count > 0 && <div style={{ fontSize: "9px", color: C.gold }}>{"●".repeat(Math.min(count, 3))}</div>}
-                    </div>
-                  );
+                  const count = calDays[key] || 0; const isToday = day === today.getDate();
+                  return <div key={day} style={{ padding: "6px 2px", borderRadius: "8px", background: count > 0 ? `${C.gold}33` : isToday ? `${C.purple}22` : "transparent", border: isToday ? `1px solid ${C.purple}` : "1px solid transparent" }}>
+                    <div style={{ fontSize: "12px", color: count > 0 ? C.gold : isToday ? C.purple : textCol, fontWeight: count > 0 || isToday ? "bold" : "normal" }}>{day}</div>
+                    {count > 0 && <div style={{ fontSize: "9px", color: C.gold }}>{"●".repeat(Math.min(count, 3))}</div>}
+                  </div>;
                 })}
               </div>
             </div>
             <div style={{ fontSize: "12px", color: subCol, textAlign: "center" }}>🟡 = dream recorded · 🔵 = today</div>
           </div>
         )}
-
         {tab === "stats" && (
           <div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px" }}>
-              {[[total, "Total Dreams", "🌙"], [analyzed, "Analyzed", "🔮"], [streak, "Day Streak", "🔥"], [Math.round(avgMystery * 10) / 10, "Avg Mystery", "⭐"]].map(([v, l, ic]) => (
+              {[[total, "Total Dreams", "🌙"], [analyzed, "Analyzed", "🔮"], [streak, "Day Streak", "🔥"], [Math.round(avgM * 10) / 10, "Avg Mystery", "⭐"]].map(([v, l, ic]) => (
                 <div key={l} style={{ ...S.card, textAlign: "center", padding: "16px 8px" }}>
                   <div style={{ fontSize: "28px", marginBottom: "4px" }}>{ic}</div>
                   <div style={{ fontSize: "22px", color: C.gold, fontWeight: "bold" }}>{v}</div>
@@ -994,25 +949,21 @@ function HistoryScreen({ S, C, t, dreams, delDream, setSelected, nav, isDark, te
   );
 }
 
-// ── INSIGHTS (locked for free) ────────────────────────────────
 function Insights({ S, C, t, dreams, isDark, textCol, subCol, borderCol, goBack, lang, isPremium, nav }) {
   const [insight, setInsight] = useState(""); const [busy, setBusy] = useState(false);
   const total = dreams.length;
   const pos = dreams.filter(d => d.mood && ["Joyful", "Peaceful", "Mystical"].some(x => d.mood.includes(x))).length;
   const str = dreams.filter(d => d.mood && ["Frightening", "Stressed", "Sad"].some(x => d.mood.includes(x))).length;
-
   async function gen() {
     setBusy(true);
     const sums = dreams.slice(0, 10).map(d => `"${d.title}": ${d.dream.slice(0, 80)}`).join("\n");
     const txt = await callGemini(`Respond in ${lang === "uz" ? "Uzbek" : lang === "ru" ? "Russian" : "English"}. You are a compassionate dream analyst. In 3–4 warm sentences, give a personal insight about this person's inner world based on their dreams. Be specific and gentle.\n\nDreams:\n${sums}`);
     setInsight(txt); setBusy(false);
   }
-
   return (
     <div style={S.app}>
       <div style={S.hdr}><button style={S.backBtn} onClick={goBack}>{t.back}</button><span style={S.logo}>📊 {t.insights}</span></div>
       <div style={S.body}>
-        {/* Basic stats — always visible */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "14px" }}>
           {[[total, t.totalDreams], [dreams.filter(d => d.interpretation).length, t.analyzed], [dreams.filter(d => d.favorite).length, "⭐ Favs"]].map(([v, l]) => (
             <div key={l} style={{ ...S.card, textAlign: "center", padding: "14px 8px" }}>
@@ -1021,8 +972,6 @@ function Insights({ S, C, t, dreams, isDark, textCol, subCol, borderCol, goBack,
             </div>
           ))}
         </div>
-
-        {/* Mood — always visible */}
         <div style={S.card}>
           <div style={{ fontWeight: "600", fontSize: "14px", marginBottom: "12px" }}>{t.moodOverview}</div>
           <div style={{ display: "flex", gap: "8px" }}>
@@ -1034,8 +983,6 @@ function Insights({ S, C, t, dreams, isDark, textCol, subCol, borderCol, goBack,
             ))}
           </div>
         </div>
-
-        {/* AI Insight — locked for free */}
         {!isPremium ? (
           <div style={{ background: "linear-gradient(135deg,rgba(124,92,191,0.2),rgba(74,144,217,0.2))", border: `1px solid ${C.purple}44`, borderRadius: "14px", padding: "24px 20px", textAlign: "center", marginTop: "8px" }}>
             <div style={{ fontSize: "36px", marginBottom: "10px" }}>🔒</div>
@@ -1057,7 +1004,6 @@ function Insights({ S, C, t, dreams, isDark, textCol, subCol, borderCol, goBack,
   );
 }
 
-// ── DICTIONARY ────────────────────────────────────────────────
 const SYMBOLS = [
   { s: "🐍 Snake", i: "May symbolize an enemy or hidden threat", p: "Often represents transformation or fear", b: "Can reflect deception or spiritual temptation" },
   { s: "💧 Water", i: "Represents knowledge, life, or divine mercy", p: "May reflect emotions or the unconscious mind", b: "Symbolizes spiritual cleansing or the Holy Spirit" },
@@ -1116,32 +1062,19 @@ function Dictionary({ S, C, t, isDark, textCol, subCol, borderCol, goBack }) {
   );
 }
 
-// ── PAYWALL ───────────────────────────────────────────────────
 function Paywall({ S, C, t, usage, setUsage, setScreen, goBack, isDark, textCol, subCol, borderCol, PLANS }) {
   const [promo, setPromo] = useState(""); const [msg, setMsg] = useState(""); const [ok, setOk] = useState(false);
-  // All known valid codes
-  const ALL_CODES = {
-    starter: ["STR-A1B2C","STR-D3E4F","STR-G5H6I","STR-J7K8L","STR-M9N0O","STR-P1Q2R","STR-S3T4U","STR-V5W6X","STR-Y7Z8A","STR-B9C0D","STR-E1F2G","STR-H3I4J","STR-K5L6M","STR-N7O8P","STR-Q9R0S"],
-    pro: ["PRO-A1B2C","PRO-D3E4F","PRO-G5H6I","PRO-J7K8L","PRO-M9N0O","PRO-P1Q2R","PRO-S3T4U","PRO-V5W6X","PRO-Y7Z8A","PRO-B9C0D","PRO-E1F2G","PRO-H3I4J","PRO-K5L6M","PRO-N7O8P","PRO-Q9R0S"],
-    elite: ["ELT-A1B2C","ELT-D3E4F","ELT-G5H6I","ELT-J7K8L","ELT-M9N0O","ELT-P1Q2R","ELT-S3T4U","ELT-V5W6X","ELT-Y7Z8A","ELT-B9C0D","ELT-E1F2G","ELT-H3I4J","ELT-K5L6M","ELT-N7O8P","ELT-Q9R0S"],
-    bonus: ["ISO2026"],
-  };
   function apply() {
     const code = promo.trim().toUpperCase();
     if (getUsedCodes().includes(code)) { setMsg(t.invalidPromo); setOk(false); return; }
-    let found = null;
-    for (const [plan, codes] of Object.entries(ALL_CODES)) { if (codes.map(c => c.toUpperCase()).includes(code)) { found = plan; break; } }
-    // Also check generated codes stored in localStorage
     const genCodes = JSON.parse(localStorage.getItem("dd9_gencodes") || "[]");
-    const genMatch = genCodes.find(g => g.code.toUpperCase() === code);
-    if (genMatch) found = genMatch.plan;
-    if (!found) { setMsg(t.invalidPromo); setOk(false); return; }
-    const pd = PLANS.find(p => p.id === found);
-    const newAnalyzes = found === "bonus" ? 30 : (pd?.analyzes || 25);
+    const match = genCodes.find(g => g.code.toUpperCase() === code);
+    if (!match) { setMsg(t.invalidPromo); setOk(false); return; }
+    const pd = PLANS.find(p => p.id === match.plan);
+    const newAnalyzes = pd?.analyzes || 25;
     addUsedCode(code);
-    const log = { date: new Date().toISOString(), plan: found, analyzes: newAnalyzes, code };
-    // ADD to existing remaining, not replace
-    setUsage(u => ({ ...u, analyzes: u.analyzes - u.count + newAnalyzes, count: 0, plan: found, subLogs: [log, ...(u.subLogs || [])] }));
+    const log = { date: new Date().toISOString(), plan: match.plan, analyzes: newAnalyzes, code };
+    setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + newAnalyzes, count: 0, plan: match.plan, subLogs: [log, ...(u.subLogs || [])] }));
     setMsg(`${t.promoOk} +${newAnalyzes} ${t.analyzesPlan}`); setOk(true);
     setTimeout(() => setScreen("home"), 1600);
   }
@@ -1177,59 +1110,43 @@ function Paywall({ S, C, t, usage, setUsage, setScreen, goBack, isDark, textCol,
   );
 }
 
-// ── SETTINGS ──────────────────────────────────────────────────
 function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setLang, isDark, textCol, subCol, borderCol, usage, setUsage, PLANS, goBack, dreams }) {
   const [tab, setTab] = useState("account");
   const [promo, setPromo] = useState(""); const [pmsg, setPmsg] = useState(""); const [pok, setPok] = useState(false);
-  const [genPlan, setGenPlan] = useState("pro");
-  const [generatedCodes, setGeneratedCodes] = useState(() => { try { return JSON.parse(localStorage.getItem("dd9_gencodes") || "[]"); } catch { return []; } });
   const [notifMsg, setNotifMsg] = useState("");
 
   function applyPromo() {
     const code = promo.trim().toUpperCase();
     if (getUsedCodes().includes(code)) { setPmsg(t.invalidPromo); setPok(false); return; }
     const genCodes = JSON.parse(localStorage.getItem("dd9_gencodes") || "[]");
-    const genMatch = genCodes.find(g => g.code.toUpperCase() === code);
-    let found = genMatch?.plan || null;
-    if (!found) { setPmsg(t.invalidPromo); setPok(false); return; }
-    const pd = PLANS.find(p => p.id === found);
+    const match = genCodes.find(g => g.code.toUpperCase() === code);
+    if (!match) { setPmsg(t.invalidPromo); setPok(false); return; }
+    const pd = PLANS.find(p => p.id === match.plan);
     const newAnalyzes = pd?.analyzes || 25;
     addUsedCode(code);
-    const log = { date: new Date().toISOString(), plan: found, analyzes: newAnalyzes, code };
-    setUsage(u => ({ ...u, analyzes: u.analyzes - u.count + newAnalyzes, count: 0, plan: found, subLogs: [log, ...(u.subLogs || [])] }));
+    const log = { date: new Date().toISOString(), plan: match.plan, analyzes: newAnalyzes, code };
+    setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + newAnalyzes, count: 0, plan: match.plan, subLogs: [log, ...(u.subLogs || [])] }));
     setPmsg(`${t.promoOk} +${newAnalyzes}`); setPok(true);
   }
 
-  function generatePromo() {
-    const code = genPromoCode(genPlan);
-    const pd = PLANS.find(p => p.id === genPlan);
-    const entry = { code, plan: genPlan, analyzes: pd?.analyzes || 25, created: new Date().toISOString(), used: false };
-    const updated = [entry, ...generatedCodes];
-    setGeneratedCodes(updated);
-    localStorage.setItem("dd9_gencodes", JSON.stringify(updated));
-  }
-
   async function enableNotifications() {
-    if (!("Notification" in window)) { setNotifMsg("❌ Notifications not supported."); return; }
+    if (!("Notification" in window)) { setNotifMsg("❌ Not supported."); return; }
     const perm = await Notification.requestPermission();
     if (perm === "granted") {
       setNotifMsg(t.notifEnabled);
-      // Schedule a daily notification at 8am using setTimeout (works while app is open)
-      const now = new Date(); const next8am = new Date(now); next8am.setHours(8, 0, 0, 0);
-      if (next8am <= now) next8am.setDate(next8am.getDate() + 1);
-      const ms = next8am - now;
-      setTimeout(() => { new Notification(t.pushTitle, { body: t.pushBody, icon: "🌙" }); }, ms);
-      localStorage.setItem("dd9_notif", "true");
+      const now = new Date(); const next = new Date(now); next.setHours(8, 0, 0, 0);
+      if (next <= now) next.setDate(next.getDate() + 1);
+      setTimeout(() => new Notification(t.enableNotif, { body: t.notifEnabled }), next - now);
     } else { setNotifMsg(t.notifDenied); }
   }
 
   const logs = usage.subLogs || [];
-  const tabs = [["account", t.accountTab], ["plan", t.planTab], ["promo", t.promoGen], ["lang", t.langTab], ["theme", t.themeTab], ["about", t.aboutTab]];
+  const tabs = [["account", t.accountTab], ["plan", t.planTab], ["lang", t.langTab], ["theme", t.themeTab], ["about", t.aboutTab]];
 
   return (
     <div style={S.app}>
       <div style={S.hdr}><button style={S.backBtn} onClick={goBack}>{t.back}</button><span style={S.logo}>⚙️ {t.settingsTitle}</span><div style={{ width: "50px" }} /></div>
-      <div style={{ display: "flex", overflowX: "auto", borderBottom: `1px solid ${borderCol}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", scrollbarWidth: "none" }}>
+      <div style={{ display: "flex", overflowX: "auto", borderBottom: `1px solid ${borderCol}`, scrollbarWidth: "none" }}>
         {tabs.map(([id, lb]) => (
           <button key={id} onClick={() => setTab(id)} style={{ flexShrink: 0, background: "none", border: "none", borderBottom: `2px solid ${tab === id ? C.gold : "transparent"}`, color: tab === id ? C.gold : subCol, padding: "11px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: "12px", whiteSpace: "nowrap" }}>{lb}</button>
         ))}
@@ -1245,14 +1162,11 @@ function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setL
             <span style={S.tag(C.gold)}>{usage.plan}</span>
             <span style={S.tag(C.blue)}>✨ {Math.max(0, usage.analyzes - usage.count)} {t.remaining}</span>
           </div>
-          <div style={{ fontSize: "12px", color: subCol, marginBottom: "16px", lineHeight: "1.6" }}>📖 {dreams.length} dreams · 🔮 {dreams.filter(d => d.interpretation).length} analyzed · ⭐ {dreams.filter(d => d.favorite).length} favorites</div>
-          <div style={{ marginBottom: "12px" }}>
-            <button onClick={enableNotifications} style={{ ...S.outBtn(C.purple), marginBottom: "4px" }}>{t.enableNotif}</button>
-            {notifMsg && <div style={{ fontSize: "12px", color: notifMsg.includes("✅") ? C.green : C.red }}>{notifMsg}</div>}
-          </div>
+          <div style={{ fontSize: "12px", color: subCol, marginBottom: "16px" }}>📖 {dreams.length} dreams · ⭐ {dreams.filter(d => d.favorite).length} favorites</div>
+          <button onClick={enableNotifications} style={{ ...S.outBtn(C.purple), marginBottom: "6px" }}>{t.enableNotif}</button>
+          {notifMsg && <div style={{ fontSize: "12px", color: notifMsg.includes("✅") ? C.green : C.red, marginBottom: "10px" }}>{notifMsg}</div>}
           <button style={S.outBtn(C.red)} onClick={() => setSession(null)}>{t.logout}</button>
         </div>}
-
         {tab === "plan" && <>
           <div style={{ background: "linear-gradient(135deg,rgba(124,92,191,0.2),rgba(74,144,217,0.2))", border: `1px solid ${borderCol}`, borderRadius: "14px", padding: "16px", textAlign: "center", marginBottom: "14px" }}>
             <div style={{ fontSize: "13px", color: subCol, marginBottom: "4px" }}>{t.currentUsage}</div>
@@ -1289,42 +1203,6 @@ function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setL
               ))}
           </div>
         </>}
-
-        {tab === "promo" && <>
-          <div style={S.card}>
-            <div style={{ fontWeight: "600", color: C.gold, marginBottom: "12px" }}>🎟 {t.promoGen}</div>
-            <div style={{ fontSize: "13px", color: subCol, marginBottom: "14px", lineHeight: "1.6" }}>Generate unique promo codes to give to your customers. Each code can only be used once.</div>
-            <label style={S.lbl}>Select Plan</label>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "14px" }}>
-              {PLANS.map(p => (
-                <button key={p.id} onClick={() => setGenPlan(p.id)} style={{ flex: 1, padding: "10px 6px", borderRadius: "10px", border: `2px solid ${genPlan === p.id ? p.color : borderCol}`, background: genPlan === p.id ? `${p.color}22` : "transparent", color: genPlan === p.id ? p.color : subCol, cursor: "pointer", fontFamily: "inherit", fontSize: "12px" }}>
-                  {t[p.lk]}<br /><span style={{ fontSize: "10px" }}>{p.analyzes} uses</span>
-                </button>
-              ))}
-            </div>
-            <button onClick={generatePromo} style={S.gradBtn}>{t.genPromo}</button>
-          </div>
-          <div style={S.card}>
-            <div style={{ fontWeight: "600", color: textCol, marginBottom: "12px" }}>Generated Codes ({generatedCodes.length})</div>
-            {generatedCodes.length === 0 ? <div style={{ fontSize: "13px", color: subCol }}>No codes generated yet.</div>
-              : generatedCodes.map((g, i) => {
-                const used = getUsedCodes().includes(g.code.toUpperCase());
-                return (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${borderCol}` }}>
-                    <div>
-                      <div style={{ fontFamily: "monospace", fontSize: "15px", fontWeight: "bold", color: used ? subCol : C.gold, textDecoration: used ? "line-through" : "none" }}>{g.code}</div>
-                      <div style={{ fontSize: "11px", color: subCol, marginTop: "2px" }}>{g.plan} · {g.analyzes} analyzes · {fmtDate(g.created)}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      {used ? <span style={{ fontSize: "11px", color: C.red }}>Used</span> : <span style={{ fontSize: "11px", color: C.green }}>Active</span>}
-                      <button onClick={() => navigator.clipboard.writeText(g.code)} style={{ ...S.smBtn(C.blue), padding: "4px 8px", fontSize: "11px" }}>📋</button>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </>}
-
         {tab === "lang" && <div style={S.card}>
           <div style={{ fontWeight: "600", color: textCol, marginBottom: "16px" }}>{t.langLabel}</div>
           {[["en", "🇬🇧 English"], ["ru", "🇷🇺 Русский"], ["uz", "🇺🇿 O'zbek"]].map(([l, lb]) => (
@@ -1333,7 +1211,6 @@ function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setL
             </button>
           ))}
         </div>}
-
         {tab === "theme" && <div style={S.card}>
           <div style={{ fontWeight: "600", color: textCol, marginBottom: "16px" }}>🎨 Theme</div>
           {[["dark", t.themeDark], ["light", t.themeLight]].map(([th, lb]) => (
@@ -1342,7 +1219,6 @@ function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setL
             </button>
           ))}
         </div>}
-
         {tab === "about" && <div style={S.card}>
           <div style={{ textAlign: "center", marginBottom: "16px" }}><div style={{ fontSize: "48px", marginBottom: "8px" }}>🌙</div><div style={{ fontSize: "18px", fontWeight: "bold", color: C.gold }}>DreamDecoder</div></div>
           <div style={{ fontSize: "13px", color: subCol, lineHeight: "2", whiteSpace: "pre-line", marginBottom: "16px", textAlign: "center" }}>{t.aboutText}</div>
@@ -1353,7 +1229,6 @@ function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setL
   );
 }
 
-// ── BOTTOM NAV ────────────────────────────────────────────────
 function BottomNav({ screen, nav, S, t }) {
   const items = [["home", "🏠", t.home], ["analyze", "✍️", t.newDream], ["history", "📜", t.history], ["insights", "📊", t.insights], ["settings", "⚙️", t.settings]];
   return (
