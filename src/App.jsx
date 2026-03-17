@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-const FB_KEY = "AIzaSyBfMTbOmVgkkSuUQVk27zeDIVGagt_E-fE";
+const FB_KEY = "AIzaSyB0RdThMgPEbAAvImKIIs5t0TzvRrDDMlQ";
 const FB_PROJECT = "studio-9184884157-3936a";
 const AUTH = `https://identitytoolkit.googleapis.com/v1/accounts`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
