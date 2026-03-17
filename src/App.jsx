@@ -1,11 +1,15 @@
+// ⚠️ REPLACE YOUR_GEMINI_KEY_HERE with your new Gemini API key from aistudio.google.com
+// Do NOT paste the key in chat — add it directly here on GitHub
+
 import { useState, useEffect, useRef } from "react";
 
 const FB_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
 const FB_PROJECT = "studio-9184884157-3936a";
 const AUTH = `https://identitytoolkit.googleapis.com/v1/accounts`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
-const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
+const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk"; // ← paste your new key here
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
 const EJS_SERVICE = "service_DreamDecoder";
 const EJS_TEMPLATE = "template_yahzaho";
 const EJS_PUBLIC = "aTsiU4AS3cJqY9KVe";
@@ -1064,19 +1068,33 @@ function Dictionary({ S, C, t, isDark, textCol, subCol, borderCol, goBack }) {
 
 function Paywall({ S, C, t, usage, setUsage, setScreen, goBack, isDark, textCol, subCol, borderCol, PLANS }) {
   const [promo, setPromo] = useState(""); const [msg, setMsg] = useState(""); const [ok, setOk] = useState(false);
-  function apply() {
+  async function apply() {
     const code = promo.trim().toUpperCase();
-    if (getUsedCodes().includes(code)) { setMsg(t.invalidPromo); setOk(false); return; }
-    const genCodes = JSON.parse(localStorage.getItem("dd9_gencodes") || "[]");
-    const match = genCodes.find(g => g.code.toUpperCase() === code);
-    if (!match) { setMsg(t.invalidPromo); setOk(false); return; }
-    const pd = PLANS.find(p => p.id === match.plan);
-    const newAnalyzes = pd?.analyzes || 25;
-    addUsedCode(code);
-    const log = { date: new Date().toISOString(), plan: match.plan, analyzes: newAnalyzes, code };
-    setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + newAnalyzes, count: 0, plan: match.plan, subLogs: [log, ...(u.subLogs || [])] }));
-    setMsg(`${t.promoOk} +${newAnalyzes} ${t.analyzesPlan}`); setOk(true);
-    setTimeout(() => setScreen("home"), 1600);
+    setMsg(""); setOk(false);
+    if (!code) return;
+    setBusy(true);
+    try {
+      // Check Firestore for this promo code
+      const r = await fetch(`${FS}/promoCodes/${code}?key=${FB_KEY}`);
+      if (!r.ok) { setMsg(t.invalidPromo); setBusy(false); return; }
+      const doc = await r.json();
+      if (!doc.fields) { setMsg(t.invalidPromo); setBusy(false); return; }
+      const used = doc.fields.used?.booleanValue || false;
+      if (used) { setMsg(t.invalidPromo); setBusy(false); return; }
+      const plan = doc.fields.plan?.stringValue || "pro";
+      const analyzes = Number(doc.fields.analyzes?.integerValue || 25);
+      // Mark as used in Firestore
+      await fetch(`${FS}/promoCodes/${code}?key=${FB_KEY}&updateMask.fieldPaths=used&updateMask.fieldPaths=usedBy`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields: { used: { booleanValue: true }, usedBy: { stringValue: session?.email || "unknown" } } })
+      });
+      addUsedCode(code);
+      const log = { date: new Date().toISOString(), plan, analyzes, code };
+      setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + analyzes, count: 0, plan, subLogs: [log, ...(u.subLogs || [])] }));
+      setMsg(`${t.promoOk} +${analyzes} ${t.analyzesPlan}`); setOk(true);
+      setTimeout(() => setScreen("home"), 1600);
+    } catch (e) { setMsg("❌ Error: " + e.message); }
+    setBusy(false);
   }
   return (
     <div style={S.app}>
@@ -1115,18 +1133,26 @@ function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setL
   const [promo, setPromo] = useState(""); const [pmsg, setPmsg] = useState(""); const [pok, setPok] = useState(false);
   const [notifMsg, setNotifMsg] = useState("");
 
-  function applyPromo() {
+  async function applyPromo() {
     const code = promo.trim().toUpperCase();
-    if (getUsedCodes().includes(code)) { setPmsg(t.invalidPromo); setPok(false); return; }
-    const genCodes = JSON.parse(localStorage.getItem("dd9_gencodes") || "[]");
-    const match = genCodes.find(g => g.code.toUpperCase() === code);
-    if (!match) { setPmsg(t.invalidPromo); setPok(false); return; }
-    const pd = PLANS.find(p => p.id === match.plan);
-    const newAnalyzes = pd?.analyzes || 25;
-    addUsedCode(code);
-    const log = { date: new Date().toISOString(), plan: match.plan, analyzes: newAnalyzes, code };
-    setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + newAnalyzes, count: 0, plan: match.plan, subLogs: [log, ...(u.subLogs || [])] }));
-    setPmsg(`${t.promoOk} +${newAnalyzes}`); setPok(true);
+    setPmsg(""); setPok(false);
+    if (!code) return;
+    try {
+      const r = await fetch(`${FS}/promoCodes/${code}?key=${FB_KEY}`);
+      if (!r.ok) { setPmsg(t.invalidPromo); return; }
+      const doc = await r.json();
+      if (!doc.fields || doc.fields.used?.booleanValue) { setPmsg(t.invalidPromo); return; }
+      const plan = doc.fields.plan?.stringValue || "pro";
+      const analyzes = Number(doc.fields.analyzes?.integerValue || 25);
+      await fetch(`${FS}/promoCodes/${code}?key=${FB_KEY}&updateMask.fieldPaths=used&updateMask.fieldPaths=usedBy`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields: { used: { booleanValue: true }, usedBy: { stringValue: session?.email || "unknown" } } })
+      });
+      addUsedCode(code);
+      const log = { date: new Date().toISOString(), plan, analyzes, code };
+      setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + analyzes, count: 0, plan, subLogs: [log, ...(u.subLogs || [])] }));
+      setPmsg(`${t.promoOk} +${analyzes}`); setPok(true);
+    } catch (e) { setPmsg("❌ Error: " + e.message); }
   }
 
   async function enableNotifications() {
