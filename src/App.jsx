@@ -1,5 +1,5 @@
 // ⚠️ Add your Gemini key on line below — get it from aistudio.google.com
-const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
+const GEMINI_KEY = "AIzaSyCuR6tXH1B2P13fXukp58JgZ8e43DvmncY";
 
 import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
