@@ -1,3 +1,7 @@
+// ⚠️ Replace YOUR_GEMINI_KEY_HERE with your Gemini API key from aistudio.google.com
+// Get a new key at: https://aistudio.google.com/app/apikey
+// NEVER paste your key in chat — add it directly here
+
 import { useState, useEffect, useRef } from "react";
 
 const FB_KEY = "AIzaSyAz0sTQXL6XDaYTNtsskhjzmEXEYSa4P3Y";
@@ -10,7 +14,7 @@ const FB_KEY = "AIzaSyAz0sTQXL6XDaYTNtsskhjzmEXEYSa4P3Y";
 const FB_PROJECT = "dreamdecoder-af2e6";
 const AUTH = `https://identitytoolkit.googleapis.com/v1/accounts`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
-const GEMINI_KEY = "YOUR_GEMINI_KEY_HERE"; // ← paste your new key here
+const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk"; // ← paste your new key here
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
 const EJS_SERVICE = "service_DreamDecoder";
@@ -648,44 +652,26 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
     setBusy(false);
   }
 
-  if (resetStep && !resetForm.codeEntered) return (
+  // Forgot password screen - just ask email, Firebase sends reset link
+  if (resetStep !== null) return (
     <div style={S.app}>
       <div style={{ ...S.hdr, justifyContent: "center" }}><span style={S.logo}>🌙 {t.appName}</span></div>
       <div style={S.body}>
-        <button style={S.backBtn} onClick={() => { setResetStep(null); setResetForm({ email: "", code: "", newPass: "", codeEntered: false }); setMsg(""); }}>{t.back}</button>
+        <button style={S.backBtn} onClick={() => { setResetStep(null); setMsg(""); }}>{t.back}</button>
         <div style={{ textAlign: "center", padding: "20px 0" }}>
           <div style={{ fontSize: "48px", marginBottom: "10px" }}>🔐</div>
-          <div style={{ fontSize: "18px", fontWeight: "bold", color: textCol }}>{t.resetPass}</div>
+          <div style={{ fontSize: "18px", fontWeight: "bold", color: textCol, marginBottom: "6px" }}>{t.resetPass}</div>
+          <div style={{ fontSize: "13px", color: subCol }}>Firebase will send a reset link to your Gmail</div>
         </div>
         <label style={S.lbl}>{t.email}</label>
         <input style={S.inp} placeholder="your@gmail.com" value={resetForm.email} onChange={e => setResetForm(f => ({ ...f, email: e.target.value }))} />
         {msg && <div style={S.msg(ok)}>{msg}</div>}
-        <button style={S.gradBtn} onClick={sendResetCode} disabled={busy}>{busy ? "⏳..." : t.sendResetCode}</button>
+        <button style={S.gradBtn} onClick={sendResetCode} disabled={busy}>{busy ? "⏳..." : "📧 Send Reset Link"}</button>
       </div>
     </div>
   );
 
-  if (resetStep && resetForm.codeEntered) return (
-    <div style={S.app}>
-      <div style={{ ...S.hdr, justifyContent: "center" }}><span style={S.logo}>🌙 {t.appName}</span></div>
-      <div style={S.body}>
-        <div style={{ textAlign: "center", padding: "20px 0 16px" }}>
-          <div style={{ fontSize: "48px", marginBottom: "10px" }}>🔢</div>
-          <div style={{ fontSize: "15px", color: subCol }}>{t.verifyMsg}</div>
-          <div style={{ fontSize: "14px", color: C.gold, fontWeight: "600" }}>{resetStep.email}</div>
-          {resetStep.fallback && <div style={{ ...S.msg(true), marginTop: "10px", textAlign: "center" }}>Code: <strong style={{ fontSize: "22px", letterSpacing: "4px", color: C.gold }}>{resetStep.code}</strong></div>}
-        </div>
-        <label style={S.lbl}>{t.verifyInput}</label>
-        <input style={{ ...S.inp, fontSize: "22px", letterSpacing: "6px", textAlign: "center", fontWeight: "bold" }} maxLength={6} placeholder="000000" value={resetForm.code} onChange={e => setResetForm(f => ({ ...f, code: e.target.value.replace(/\D/g, "") }))} />
-        <label style={S.lbl}>{t.newPassword}</label>
-        <input type="password" style={S.inp} placeholder="••••••" value={resetForm.newPass} onChange={e => setResetForm(f => ({ ...f, newPass: e.target.value }))} />
-        {msg && <div style={S.msg(ok)}>{msg}</div>}
-        <button style={S.gradBtn} onClick={confirmReset} disabled={busy}>{busy ? "⏳..." : t.confirmReset}</button>
-        <button style={S.outBtn(C.red)} onClick={() => { setResetStep(null); setResetForm({ email: "", code: "", newPass: "", codeEntered: false }); setMsg(""); }}>{t.back}</button>
-      </div>
-    </div>
-  );
-
+  // Email verification waiting screen
   if (codeStep) return (
     <div style={S.app}>
       <div style={{ ...S.hdr, justifyContent: "center" }}><span style={S.logo}>🌙 {t.appName}</span></div>
@@ -693,17 +679,20 @@ function AuthScreen({ S, C, t, lang, setLang, T, setSession, isDark, textCol, su
         <div style={{ textAlign: "center", padding: "20px 0 20px" }}>
           <div style={{ fontSize: "56px", marginBottom: "12px" }}>📧</div>
           <div style={{ fontSize: "18px", fontWeight: "bold", color: textCol, marginBottom: "6px" }}>{t.verifyTitle}</div>
-          <div style={{ fontSize: "13px", color: subCol, marginBottom: "4px" }}>{t.verifyMsg}</div>
-          <div style={{ fontSize: "15px", color: C.gold, fontWeight: "600", marginBottom: "6px" }}>{codeStep.email}</div>
-          <div style={{ fontSize: "12px", color: subCol }}>{t.verifyExpire}</div>
+          <div style={{ fontSize: "13px", color: subCol, marginBottom: "4px" }}>Verification email sent to:</div>
+          <div style={{ fontSize: "15px", color: C.gold, fontWeight: "600", marginBottom: "16px" }}>{codeStep.email}</div>
+          <div style={{ ...S.card, textAlign: "left" }}>
+            <div style={{ fontSize: "13px", color: textCol, lineHeight: "2" }}>
+              1. Open your Gmail inbox<br/>
+              2. Click the verification link from Firebase<br/>
+              3. Come back and tap the button below ✅
+            </div>
+          </div>
         </div>
-        {codeStep.fallback && <div style={{ ...S.msg(true), textAlign: "center" }}>Your code: <strong style={{ fontSize: "24px", letterSpacing: "5px", color: C.gold }}>{codeStep.code}</strong></div>}
-        <label style={S.lbl}>{t.verifyInput}</label>
-        <input ref={codeRef} style={{ ...S.inp, fontSize: "24px", letterSpacing: "8px", textAlign: "center", fontWeight: "bold" }} maxLength={6} placeholder="000000" value={enteredCode} onChange={e => setEnteredCode(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && verifyCode()} />
         {msg && <div style={S.msg(ok)}>{msg}</div>}
-        <button style={S.gradBtn} onClick={verifyCode} disabled={busy || enteredCode.length !== 6}>{t.verifyBtn}</button>
-        <button style={S.outBtn(subCol)} onClick={resendCode}>{t.verifyResend}</button>
-        <button style={S.outBtn(C.red)} onClick={() => { setCodeStep(null); setMsg(""); setEnteredCode(""); }}>{t.verifyBack}</button>
+        <button style={S.gradBtn} onClick={checkEmailVerified} disabled={busy}>{busy ? "🔍 Checking..." : "✅ I verified my email — Continue"}</button>
+        <button style={S.outBtn(subCol)} onClick={resendVerificationEmail}>{t.verifyResend}</button>
+        <button style={S.outBtn(C.red)} onClick={() => { setCodeStep(null); setMsg(""); }}>{t.verifyBack}</button>
       </div>
     </div>
   );
@@ -1079,17 +1068,14 @@ function Paywall({ S, C, t, usage, setUsage, setScreen, goBack, isDark, textCol,
     const code = promo.trim().toUpperCase();
     if (!code) return;
     setBusy(true); setMsg("");
-    try {
-      const doc = await fsGet("promoCodes", code);
-      if (!doc || doc.used) { setMsg(t.invalidPromo); setOk(false); setBusy(false); return; }
-      const analyzes = Number(doc.analyzes) || 25;
-      await fsPatch("promoCodes", code, { used: true, usedBy: session?.email || "unknown" });
-      addUsedCode(code);
-      const log = { date: new Date().toISOString(), plan: doc.plan, analyzes, code };
-      setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + analyzes, count: 0, plan: doc.plan, subLogs: [log, ...(u.subLogs || [])] }));
-      setMsg(`${t.promoOk} +${analyzes} ${t.analyzesPlan}`); setOk(true);
-      setTimeout(() => setScreen("home"), 1600);
-    } catch (e) { setMsg("❌ " + e.message); }
+    const res = await validatePromo(code);
+    if (res.error) { setMsg(t.invalidPromo); setOk(false); setBusy(false); return; }
+    await markPromoUsed(code, session?.email || "unknown");
+    addUsedCode(code);
+    const log = { date: new Date().toISOString(), plan: res.plan, analyzes: res.analyzes, code };
+    setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + res.analyzes, count: 0, plan: res.plan, subLogs: [log, ...(u.subLogs || [])] }));
+    setMsg(`${t.promoOk} +${res.analyzes} ${t.analyzesPlan}`); setOk(true);
+    setTimeout(() => setScreen("home"), 1600);
     setBusy(false);
   }
   return (
@@ -1132,16 +1118,13 @@ function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setL
   async function applyPromo() {
     const code = promo.trim().toUpperCase();
     if (!code) return;
-    try {
-      const doc = await fsGet("promoCodes", code);
-      if (!doc || doc.used) { setPmsg(t.invalidPromo); setPok(false); return; }
-      const analyzes = Number(doc.analyzes) || 25;
-      await fsPatch("promoCodes", code, { used: true, usedBy: session?.email || "unknown" });
-      addUsedCode(code);
-      const log = { date: new Date().toISOString(), plan: doc.plan, analyzes, code };
-      setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + analyzes, count: 0, plan: doc.plan, subLogs: [log, ...(u.subLogs || [])] }));
-      setPmsg(`${t.promoOk} +${analyzes}`); setPok(true);
-    } catch (e) { setPmsg("❌ " + e.message); }
+    const res = await validatePromo(code);
+    if (res.error) { setPmsg(t.invalidPromo); setPok(false); return; }
+    await markPromoUsed(code, session?.email || "unknown");
+    addUsedCode(code);
+    const log = { date: new Date().toISOString(), plan: res.plan, analyzes: res.analyzes, code };
+    setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + res.analyzes, count: 0, plan: res.plan, subLogs: [log, ...(u.subLogs || [])] }));
+    setPmsg(`${t.promoOk} +${res.analyzes}`); setPok(true);
   }
 
   async function enableNotifications() {
