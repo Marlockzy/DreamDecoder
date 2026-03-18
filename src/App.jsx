@@ -1,7 +1,3 @@
-// ⚠️ Replace YOUR_GEMINI_KEY_HERE with your Gemini API key from aistudio.google.com
-// Get a new key at: https://aistudio.google.com/app/apikey
-// NEVER paste your key in chat — add it directly here
-
 import { useState, useEffect, useRef } from "react";
 
 const FB_KEY = "AIzaSyAz0sTQXL6XDaYTNtsskhjzmEXEYSa4P3Y";
@@ -14,7 +10,7 @@ const FB_KEY = "AIzaSyAz0sTQXL6XDaYTNtsskhjzmEXEYSa4P3Y";
 const FB_PROJECT = "dreamdecoder-af2e6";
 const AUTH = `https://identitytoolkit.googleapis.com/v1/accounts`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
-const GEMINI_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk"; // ← paste your new key here
+const GEMINI_KEY = "YOUR_GEMINI_KEY_HERE"; // ← paste your new key here
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
 const EJS_SERVICE = "service_DreamDecoder";
