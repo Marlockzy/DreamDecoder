@@ -10,7 +10,7 @@ const FB_PROJECT = "dreamdecoder-af2e6// ⚠️ REPLACE YOUR_GEMINI_KEY_HERE wit
 
 import { useState, useEffect, useRef } from "react";
 
-const FB_KEY = "AIzaSyDE9gQMwUewcpw2meI5-5An5bQ0XtvHVmk";
+const FB_KEY = "AIzaSyAz0sTQXL6XDaYTNtsskhjzmEXEYSa4P3Y";
 const FB_PROJECT = "dreamdecoder-af2e6";
 const AUTH = `https://identitytoolkit.googleapis.com/v1/accounts`;
 const FS = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
