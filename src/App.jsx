@@ -1,4 +1,11 @@
-// ⚠️ REPLACE YOUR_GEMINI_KEY_HERE with your new Gemini API key from aistudio.google.com
+// ⚠️ Replace YOUR_GEMINI_KEY_HERE with your Gemini API key from aistudio.google.com
+// Get a new key at: https://aistudio.google.com/app/apikey
+// NEVER paste your key in chat — add it directly here
+
+import { useState, useEffect, useRef } from "react";
+
+const FB_KEY = "AIzaSyAz0sTQXL6XDaYTNtsskhjzmEXEYSa4P3Y";
+const FB_PROJECT = "dreamdecoder-af2e6// ⚠️ REPLACE YOUR_GEMINI_KEY_HERE with your new Gemini API key from aistudio.google.com
 // Do NOT paste the key in chat — add it directly here on GitHub
 
 import { useState, useEffect, useRef } from "react";
@@ -389,10 +396,13 @@ export default function App() {
 
   useEffect(() => {
     if (!session?.uid) return;
-    fsRead(session.uid, session.idToken || "local_").then(d => {
+    fsGet("users", session.uid).then(d => {
       if (d) {
         setUsageRaw({ count: Number(d.count) || 0, analyzes: Number(d.analyzes) || FREE_LIMIT, plan: d.plan || "free", subLogs: d.subLogs || [] });
         setDreams(d.dreams || []);
+      } else {
+        // First login — create user data
+        fsPatch("users", session.uid, { count: 0, analyzes: FREE_LIMIT, plan: "free", subLogs: "[]", dreams: "[]", email: session.email, username: session.username });
       }
       setLoaded(true);
     });
@@ -400,7 +410,8 @@ export default function App() {
 
   async function persist(nu, nd) {
     if (!session?.uid) return;
-    await fsWrite(session.uid, { count: nu.count, analyzes: nu.analyzes, plan: nu.plan, subLogs: nu.subLogs || [], dreams: nd, email: session.email, username: session.username }, session.idToken || "local_");
+    try { localStorage.setItem("dd9_" + session.uid, JSON.stringify({ ...nu, dreams: nd })); } catch {}
+    await fsPatch("users", session.uid, { count: nu.count, analyzes: nu.analyzes, plan: nu.plan, subLogs: nu.subLogs || [], dreams: nd, email: session.email, username: session.username });
   }
 
   function setUsage(fn) { setUsageRaw(p => { const n = typeof fn === "function" ? fn(p) : fn; persist(n, dreams); return n; }); }
@@ -1070,30 +1081,19 @@ function Paywall({ S, C, t, usage, setUsage, setScreen, goBack, isDark, textCol,
   const [promo, setPromo] = useState(""); const [msg, setMsg] = useState(""); const [ok, setOk] = useState(false);
   async function apply() {
     const code = promo.trim().toUpperCase();
-    setMsg(""); setOk(false);
     if (!code) return;
-    setBusy(true);
+    setBusy(true); setMsg("");
     try {
-      // Check Firestore for this promo code
-      const r = await fetch(`${FS}/promoCodes/${code}?key=${FB_KEY}`);
-      if (!r.ok) { setMsg(t.invalidPromo); setBusy(false); return; }
-      const doc = await r.json();
-      if (!doc.fields) { setMsg(t.invalidPromo); setBusy(false); return; }
-      const used = doc.fields.used?.booleanValue || false;
-      if (used) { setMsg(t.invalidPromo); setBusy(false); return; }
-      const plan = doc.fields.plan?.stringValue || "pro";
-      const analyzes = Number(doc.fields.analyzes?.integerValue || 25);
-      // Mark as used in Firestore
-      await fetch(`${FS}/promoCodes/${code}?key=${FB_KEY}&updateMask.fieldPaths=used&updateMask.fieldPaths=usedBy`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: { used: { booleanValue: true }, usedBy: { stringValue: session?.email || "unknown" } } })
-      });
+      const doc = await fsGet("promoCodes", code);
+      if (!doc || doc.used) { setMsg(t.invalidPromo); setOk(false); setBusy(false); return; }
+      const analyzes = Number(doc.analyzes) || 25;
+      await fsPatch("promoCodes", code, { used: true, usedBy: session?.email || "unknown" });
       addUsedCode(code);
-      const log = { date: new Date().toISOString(), plan, analyzes, code };
-      setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + analyzes, count: 0, plan, subLogs: [log, ...(u.subLogs || [])] }));
+      const log = { date: new Date().toISOString(), plan: doc.plan, analyzes, code };
+      setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + analyzes, count: 0, plan: doc.plan, subLogs: [log, ...(u.subLogs || [])] }));
       setMsg(`${t.promoOk} +${analyzes} ${t.analyzesPlan}`); setOk(true);
       setTimeout(() => setScreen("home"), 1600);
-    } catch (e) { setMsg("❌ Error: " + e.message); }
+    } catch (e) { setMsg("❌ " + e.message); }
     setBusy(false);
   }
   return (
@@ -1135,24 +1135,17 @@ function Settings({ S, C, t, T, session, setSession, theme, setTheme, lang, setL
 
   async function applyPromo() {
     const code = promo.trim().toUpperCase();
-    setPmsg(""); setPok(false);
     if (!code) return;
     try {
-      const r = await fetch(`${FS}/promoCodes/${code}?key=${FB_KEY}`);
-      if (!r.ok) { setPmsg(t.invalidPromo); return; }
-      const doc = await r.json();
-      if (!doc.fields || doc.fields.used?.booleanValue) { setPmsg(t.invalidPromo); return; }
-      const plan = doc.fields.plan?.stringValue || "pro";
-      const analyzes = Number(doc.fields.analyzes?.integerValue || 25);
-      await fetch(`${FS}/promoCodes/${code}?key=${FB_KEY}&updateMask.fieldPaths=used&updateMask.fieldPaths=usedBy`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: { used: { booleanValue: true }, usedBy: { stringValue: session?.email || "unknown" } } })
-      });
+      const doc = await fsGet("promoCodes", code);
+      if (!doc || doc.used) { setPmsg(t.invalidPromo); setPok(false); return; }
+      const analyzes = Number(doc.analyzes) || 25;
+      await fsPatch("promoCodes", code, { used: true, usedBy: session?.email || "unknown" });
       addUsedCode(code);
-      const log = { date: new Date().toISOString(), plan, analyzes, code };
-      setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + analyzes, count: 0, plan, subLogs: [log, ...(u.subLogs || [])] }));
+      const log = { date: new Date().toISOString(), plan: doc.plan, analyzes, code };
+      setUsage(u => ({ ...u, analyzes: (u.analyzes - u.count) + analyzes, count: 0, plan: doc.plan, subLogs: [log, ...(u.subLogs || [])] }));
       setPmsg(`${t.promoOk} +${analyzes}`); setPok(true);
-    } catch (e) { setPmsg("❌ Error: " + e.message); }
+    } catch (e) { setPmsg("❌ " + e.message); }
   }
 
   async function enableNotifications() {
