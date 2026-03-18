@@ -1,5 +1,4 @@
-// ⚠️ Add your Gemini key on line below — get it from aistudio.google.com
-const GEMINI_KEY = "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";
+const GROQ_KEY = "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";
 
 import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
@@ -18,7 +17,6 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 const FREE_LIMIT = 5;
 const C = { bg:"#07071a", card:"rgba(255,255,255,0.04)", border:"rgba(255,255,255,0.09)", gold:"#c9a84c", text:"#e8e0d0", sub:"#6a6a9a", purple:"#7c5cbf", blue:"#4a90d9", green:"#4caf50", red:"#c95050" };
 const MOODS = ["😊 Joyful","😴 Peaceful","✨ Mystical","😕 Confusing","😨 Frightening","😢 Sad","😤 Stressed"];
@@ -284,11 +282,23 @@ async function fsQueryOne(col, field, value) {
 }
 async function callGemini(prompt) {
   try {
-    const r = await fetch(GEMINI_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1200,temperature:0.75}})});
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1200,
+        temperature: 0.75
+      })
+    });
     const d = await r.json();
-    if(d.error) return "Error: "+d.error.message;
-    return d.candidates?.[0]?.content?.parts?.[0]?.text||"Could not interpret.";
-  } catch(e) { return "Connection error: "+e.message; }
+    if (d.error) return "Error: " + d.error.message;
+    return d.choices?.[0]?.message?.content || "Could not interpret.";
+  } catch(e) { return "Connection error: " + e.message; }
 }
 function parseScores(t) { const m=(l)=>{const r=new RegExp(`${l}[:\\s]+([0-9]+)`,"i");const mt=t.match(r);return mt?parseInt(mt[1]):Math.floor(Math.random()*4)+5;};return{mystery:m("mystery"),emotion:m("emotional intensity"),symbols:m("symbol richness")}; }
 function fmtFull(iso){return new Date(iso).toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});}
