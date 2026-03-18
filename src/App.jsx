@@ -1,4 +1,4 @@
-const GROQ_KEY = "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";
+const GEMINI_KEY = "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";
 
 import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
@@ -17,6 +17,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 const FREE_LIMIT = 5;
 const C = { bg:"#07071a", card:"rgba(255,255,255,0.04)", border:"rgba(255,255,255,0.09)", gold:"#c9a84c", text:"#e8e0d0", sub:"#6a6a9a", purple:"#7c5cbf", blue:"#4a90d9", green:"#4caf50", red:"#c95050" };
 const MOODS = ["😊 Joyful","😴 Peaceful","✨ Mystical","😕 Confusing","😨 Frightening","😢 Sad","😤 Stressed"];
@@ -27,13 +28,19 @@ const PLANS = [
   {id:"elite",lk:"planElite",price:"$16.99",analyzes:100,color:"#4a90d9"},
 ];
 
-const SYSTEM_PROMPT = `You are the AI engine of DreamDecoder, a modern dream interpretation app.
-Analyze the user's dream from three perspectives: Islamic, Psychological, Biblical.
-RULES:
-- Respond in the SAME language as the user (English, Russian, or Uzbek).
-- Simple modern language. Max 280 words total. Emojis. Bullet points for symbols.
-- Use "may symbolize", "can represent", "often reflects". Never absolute claims.
-- Each section MUST give a DIFFERENT perspective.
+const SYSTEM_PROMPT = (lang) => {
+  const langName = lang === "uz" ? "Uzbek" : lang === "ru" ? "Russian" : "English";
+  return `You are the AI engine of DreamDecoder, a dream interpretation app.
+CRITICAL: You MUST respond ENTIRELY in ${langName}. Every single word must be in ${langName}. Do NOT use any other language.
+
+Analyze the dream from three perspectives: Islamic, Psychological, Biblical.
+
+ISLAMIC RULES: Always provide accurate, authentic Islamic dream interpretation based on Ibn Sirin's methodology. Reference hadith and Quran where relevant. Be precise and truthful about Islamic teachings.
+
+LANGUAGE: Every word of your response must be in ${langName}.
+Max 280 words. Use emojis. Bullet points for symbols.
+Use "may symbolize", "can represent", "often reflects". Never absolute claims.
+Each section MUST give a DIFFERENT perspective.
 
 OUTPUT FORMAT (follow exactly):
 Dream Summary 🌙
@@ -41,7 +48,7 @@ Dream Summary 🌙
 
 ISLAMIC VIEW ☪️
 Meaning:
-(2–3 sentences)
+(2–3 sentences — authentic Islamic interpretation)
 Symbols:
 • symbol — meaning
 • symbol — meaning
@@ -67,18 +74,19 @@ Takeaway:
 (1 sentence)
 
 SPIRITUAL & PRACTICAL ADVICE 💡
-• (Spiritual advice — pray, read Quran/Bible, seek forgiveness)
-• (Lifestyle — reduce screen time, sleep earlier, exercise)
-• (Mental — journal, talk to someone, take a break)
-• (Action — make a specific change this week)
+• (Spiritual — pray, read Quran/Bible, seek forgiveness, avoid sins)
+• (Lifestyle — reduce screen time, avoid TikTok/Instagram overuse, sleep earlier)
+• (Mental — journal, talk to someone trusted, take a break)
+• (Action — one specific change to make this week)
 
-DREAM SCORE:
-Mystery: X/10
-Emotional Intensity: X/10
-Symbol Richness: X/10
+DREAM SCORE (analyze actual content, be accurate):
+Mystery: X/10 (based on how unusual/surreal the dream is)
+Emotional Intensity: X/10 (based on emotions described)
+Symbol Richness: X/10 (based on number and depth of symbols)
 
 FINAL DISCLAIMER
 Dream interpretations are symbolic and not guaranteed truths.`;
+};
 
 const T = {
   en: {
@@ -282,25 +290,39 @@ async function fsQueryOne(col, field, value) {
 }
 async function callGemini(prompt) {
   try {
-    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_KEY}`
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 1200,
-        temperature: 0.75
-      })
-    });
+    const r = await fetch(GEMINI_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1200,temperature:0.75}})});
     const d = await r.json();
-    if (d.error) return "Error: " + d.error.message;
-    return d.choices?.[0]?.message?.content || "Could not interpret.";
-  } catch(e) { return "Connection error: " + e.message; }
+    if(d.error) return "Error: "+d.error.message;
+    return d.candidates?.[0]?.content?.parts?.[0]?.text||"Could not interpret.";
+  } catch(e) { return "Connection error: "+e.message; }
 }
-function parseScores(t) { const m=(l)=>{const r=new RegExp(`${l}[:\\s]+([0-9]+)`,"i");const mt=t.match(r);return mt?parseInt(mt[1]):Math.floor(Math.random()*4)+5;};return{mystery:m("mystery"),emotion:m("emotional intensity"),symbols:m("symbol richness")}; }
+function parseScores(txt, form) {
+  // Try to extract from AI response first
+  const m = (l) => { const r = new RegExp(`${l}[:\\s]+([0-9]+)`, "i"); const mt = txt.match(r); return mt ? Math.min(10, Math.max(1, parseInt(mt[1]))) : null; };
+  const aiMystery = m("mystery"); const aiEmotion = m("emotional intensity"); const aiSymbols = m("symbol richness");
+
+  // Content-based scoring as fallback
+  const dreamText = (form?.dream || "").toLowerCase();
+  const wordCount = dreamText.split(" ").length;
+
+  // Mystery: based on surreal/unusual words
+  const mysteryWords = ["fly","flying","fall","falling","death","dead","monster","strange","weird","impossible","transform","magic","ghost","invisible","giant","tiny","endless","dark","light","float","teleport","disappear"];
+  const mysteryScore = Math.min(10, Math.max(1, Math.round(3 + (mysteryWords.filter(w => dreamText.includes(w)).length * 1.5))));
+
+  // Emotion: based on mood selected
+  const emotionMap = {"😊 Joyful":6,"😴 Peaceful":4,"✨ Mystical":8,"😕 Confusing":7,"😨 Frightening":9,"😢 Sad":8,"😤 Stressed":8};
+  const emotionScore = emotionMap[form?.mood] || Math.min(10, Math.max(1, Math.round(wordCount / 15)));
+
+  // Symbol richness: based on objects and dream length
+  const symbolCount = (form?.objects || "").split(",").filter(s => s.trim()).length;
+  const symbolScore = Math.min(10, Math.max(1, Math.round(3 + symbolCount * 1.5 + Math.min(3, wordCount / 30))));
+
+  return {
+    mystery: aiMystery || mysteryScore,
+    emotion: aiEmotion || emotionScore,
+    symbols: aiSymbols || symbolScore
+  };
+}
 function fmtFull(iso){return new Date(iso).toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});}
 function fmtDate(iso){return new Date(iso).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});}
 function fmtDay(iso){return new Date(iso).toISOString().split("T")[0];}
@@ -382,14 +404,20 @@ export default function App() {
   function setUsage(fn){setUsageRaw(p=>{const n=typeof fn==="function"?fn(p):fn;persist(n,dreams);return n;});}
   function addDream(d){const nd=[d,...dreams];setDreams(nd);persist(usage,nd);}
   function delDream(id){const nd=dreams.filter(x=>x.id!==id);setDreams(nd);persist(usage,nd);}
-  function toggleFav(id){const nd=dreams.map(d=>d.id===id?{...d,favorite:!d.favorite}:d);setDreams(nd);persist(usage,nd);}
+  function toggleFav(id) {
+    const nd = dreams.map(d => d.id === id ? {...d, favorite: !d.favorite} : d);
+    setDreams(nd);
+    persist(usage, nd);
+    // Also update selected so button turns yellow immediately
+    if (selected?.id === id) setSelected(prev => ({...prev, favorite: !prev.favorite}));
+  }
   function nav(sc){setHistory(h=>[...h,sc]);setScreen(sc);}
   function goBack(){setHistory(h=>{const nh=h.slice(0,-1);setScreen(nh[nh.length-1]||"home");return nh.length?nh:["home"]});}
 
   if(!session) return <AuthScreen S={S} C={C} t={t} lang={lang} setLang={setLang} T={T} setSession={setSession} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol}/>;
   if(!loaded) return <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"16px",minHeight:"100vh"}}><div style={{fontSize:"52px"}}>🌙</div><div style={{color:C.gold}}>{t.loading}</div></div>;
   if(screen==="paywall") return <Paywall S={S} C={C} t={t} usage={usage} setUsage={setUsage} setScreen={setScreen} goBack={goBack} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} PLANS={PLANS} session={session}/>;
-  if(screen==="analyze") return <Analyze S={S} C={C} t={t} addDream={addDream} nav={nav} setSelected={setSelected} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} MOODS={MOODS} usage={usage} setUsage={setUsage} remaining={remaining} goBack={goBack} toPaywall={()=>nav("paywall")}/>;
+  if(screen==="analyze") return <Analyze S={S} C={C} t={t} addDream={addDream} nav={nav} setSelected={setSelected} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} MOODS={MOODS} usage={usage} setUsage={setUsage} remaining={remaining} goBack={goBack} toPaywall={()=>nav("paywall")} lang={lang}/>;
   if(screen==="result"&&selected) return <Result S={S} C={C} t={t} dream={selected} nav={nav} interpView={interpView} setInterpView={setInterpView} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} goBack={goBack} toggleFav={toggleFav}/>;
   if(screen==="history") return <HistoryScreen S={S} C={C} t={t} dreams={dreams} delDream={delDream} setSelected={setSelected} nav={nav} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} goBack={goBack} toggleFav={toggleFav}/>;
   if(screen==="insights") return <Insights S={S} C={C} t={t} dreams={dreams} isDark={isDark} textCol={textCol} subCol={subCol} borderCol={borderCol} goBack={goBack} lang={lang} isPremium={isPremium} nav={nav}/>;
@@ -473,7 +501,8 @@ function AuthScreen({S,C,t,lang,setLang,T,setSession,isDark,textCol,subCol,borde
   const [mode,setMode]=useState("register");
   const [form,setForm]=useState({username:"",email:"",password:""});
   const [msg,setMsg]=useState("");const [ok,setOk]=useState(false);const [busy,setBusy]=useState(false);
-  const [verifyStep,setVerifyStep]=useState(null); // {email, uid, username}
+  const [verifyStep,setVerifyStep]=useState(null); // {email, uid, username, code, expires}
+  const [enteredCode,setEnteredCode]=useState("");
   const [resetStep,setResetStep]=useState(false);
   const [resetEmail,setResetEmail]=useState("");
 
@@ -515,15 +544,15 @@ function AuthScreen({S,C,t,lang,setLang,T,setSession,isDark,textCol,subCol,borde
     if(password.length<6) return err(t.shortPass);
     setBusy(true);setMsg("");
     try{
-      // Check username taken
       const existingUser=await fsQueryOne("accounts","username_lower",username.toLowerCase());
       if(existingUser) return err(t.usernameExists);
-      // Create Firebase Auth user
       const cred=await createUserWithEmailAndPassword(auth,email,password);
       const uid=cred.user.uid;
-      await sendEmailVerification(cred.user);
       await fsPatch("accounts",uid,{uid,email:email.toLowerCase(),username,username_lower:username.toLowerCase(),createdAt:new Date().toISOString(),verified:false});
-      setVerifyStep({email,uid,username});
+      // Send 6-digit code via EmailJS
+      const code=genCode(); const expires=Date.now()+10*60*1000;
+      const sent=await sendVerificationEmail(email,username,code);
+      setVerifyStep({email,uid,username,code,expires,fallback:!sent});
       succ(t.registered);
     }catch(e){
       if(e.code==="auth/email-already-in-use") return err(t.emailExists);
@@ -539,13 +568,15 @@ function AuthScreen({S,C,t,lang,setLang,T,setSession,isDark,textCol,subCol,borde
     try{
       const cred=await signInWithEmailAndPassword(auth,email,password);
       const user=cred.user;
-      if(!user.emailVerified){
-        setVerifyStep({email,uid:user.uid,username:""});
+      const acc=await fsGet("accounts",user.uid);
+      if(!acc?.verified){
+        // Resend 6-digit code
+        const code=genCode(); const expires=Date.now()+10*60*1000;
+        const sent=await sendVerificationEmail(email,acc?.username||email.split("@")[0],code);
+        setVerifyStep({email,uid:user.uid,username:acc?.username||email.split("@")[0],code,expires,fallback:!sent});
         return err(t.notVerified);
       }
-      const acc=await fsGet("accounts",user.uid);
       const username=acc?.username||email.split("@")[0];
-      await fsPatch("accounts",user.uid,{verified:true});
       succ(t.accountActive);
       setTimeout(()=>setSession({uid:user.uid,email:user.email,username,idToken:"firebase_"+Date.now()}),600);
     }catch(e){
@@ -556,29 +587,22 @@ function AuthScreen({S,C,t,lang,setLang,T,setSession,isDark,textCol,subCol,borde
     }
   }
 
-  async function checkVerified(){
+  async function verifyCode(){
     if(!verifyStep) return;
-    setBusy(true);
-    try{
-      await auth.currentUser?.reload();
-      const user=auth.currentUser;
-      if(user?.emailVerified){
-        await fsPatch("accounts",verifyStep.uid,{verified:true});
-        const acc=await fsGet("accounts",verifyStep.uid);
-        succ(t.accountActive);
-        setTimeout(()=>setSession({uid:verifyStep.uid,email:verifyStep.email,username:acc?.username||verifyStep.username,idToken:"firebase_"+Date.now()}),600);
-      } else {
-        err(t.notVerified);
-      }
-    }catch(e){err("❌ "+e.message);}
-    setBusy(false);
+    if(Date.now()>verifyStep.expires){err("❌ Code expired. Request a new one.");setVerifyStep(null);return;}
+    if(enteredCode.trim()!==verifyStep.code){err(t.notVerified);return;}
+    await fsPatch("accounts",verifyStep.uid,{verified:true});
+    await fsPatch("users",verifyStep.uid,{count:0,analyzes:FREE_LIMIT,plan:"free",subLogs:[],dreams:[],email:verifyStep.email,username:verifyStep.username});
+    succ(t.accountActive);
+    setTimeout(()=>setSession({uid:verifyStep.uid,email:verifyStep.email,username:verifyStep.username,idToken:"firebase_"+Date.now()}),600);
   }
 
-  async function resendVerification(){
-    try{
-      await sendEmailVerification(auth.currentUser);
-      succ(t.codeSent);
-    }catch(e){err("❌ "+e.message);}
+  async function resendCode(){
+    if(!verifyStep) return;
+    const code=genCode(); const expires=Date.now()+10*60*1000;
+    const sent=await sendVerificationEmail(verifyStep.email,verifyStep.username,code);
+    setVerifyStep({...verifyStep,code,expires,fallback:!sent});
+    setEnteredCode("");succ(t.codeSent);
   }
 
   async function handleForgotPassword(){
@@ -612,7 +636,7 @@ function AuthScreen({S,C,t,lang,setLang,T,setSession,isDark,textCol,subCol,borde
     </div>
   );
 
-  // Email verification screen
+  // Email verification screen — 6-digit code
   if(verifyStep) return (
     <div style={S.app}>
       <div style={{...S.hdr,justifyContent:"center"}}><span style={S.logo}>🌙 {t.appName}</span></div>
@@ -621,20 +645,27 @@ function AuthScreen({S,C,t,lang,setLang,T,setSession,isDark,textCol,subCol,borde
           <div style={{fontSize:"56px",marginBottom:"12px"}}>📧</div>
           <div style={{fontSize:"18px",fontWeight:"bold",color:textCol,marginBottom:"6px"}}>{t.verifyTitle}</div>
           <div style={{fontSize:"13px",color:subCol,marginBottom:"4px"}}>{t.verifyMsg}</div>
-          <div style={{fontSize:"15px",color:C.gold,fontWeight:"600",marginBottom:"16px"}}>{verifyStep.email}</div>
-          <div style={{...S.card,textAlign:"left"}}>
-            <div style={{fontSize:"13px",color:textCol,lineHeight:"2"}}>
-              1. Open your Gmail inbox<br/>
-              2. Find email from Firebase / noreply@<br/>
-              3. Click the verification link<br/>
-              4. Come back and tap the button below ✅
-            </div>
-          </div>
+          <div style={{fontSize:"15px",color:C.gold,fontWeight:"600",marginBottom:"6px"}}>{verifyStep.email}</div>
+          <div style={{fontSize:"12px",color:subCol}}>Code expires in 10 minutes</div>
         </div>
+        {verifyStep.fallback&&(
+          <div style={{...S.msg(true),textAlign:"center",marginBottom:"16px"}}>
+            📧 EmailJS not configured yet.<br/>Your code: <strong style={{fontSize:"24px",letterSpacing:"5px",color:C.gold}}>{verifyStep.code}</strong>
+          </div>
+        )}
+        <label style={S.lbl}>{t.verifyInput}</label>
+        <input
+          style={{...S.inp,fontSize:"28px",letterSpacing:"10px",textAlign:"center",fontWeight:"bold"}}
+          maxLength={6} placeholder="000000"
+          value={enteredCode}
+          onChange={e=>setEnteredCode(e.target.value.replace(/\D/g,""))}
+          onKeyDown={e=>e.key==="Enter"&&verifyCode()}
+          autoFocus
+        />
         {msg&&<div style={S.msg(ok)}>{msg}</div>}
-        <button style={S.gradBtn} onClick={checkVerified} disabled={busy}>{busy?"🔍 Checking...":t.verifyCheck}</button>
-        <button style={S.outBtn(subCol)} onClick={resendVerification}>{t.verifyResend}</button>
-        <button style={S.outBtn(C.red)} onClick={()=>{setVerifyStep(null);setMsg("");}}>{t.verifyBack}</button>
+        <button style={S.gradBtn} onClick={verifyCode} disabled={busy||enteredCode.length!==6}>{busy?"⏳...":t.verifyCheck}</button>
+        <button style={S.outBtn(subCol)} onClick={resendCode}>{t.verifyResend}</button>
+        <button style={S.outBtn(C.red)} onClick={()=>{setVerifyStep(null);setEnteredCode("");setMsg("");}}>{t.verifyBack}</button>
       </div>
     </div>
   );
@@ -684,7 +715,7 @@ function AuthScreen({S,C,t,lang,setLang,T,setSession,isDark,textCol,subCol,borde
 }
 
 // ── ANALYZE ────────────────────────────────────────────────────
-function Analyze({S,C,t,addDream,nav,setSelected,isDark,textCol,subCol,borderCol,MOODS,usage,setUsage,remaining,goBack,toPaywall}){
+function Analyze({S,C,t,addDream,nav,setSelected,isDark,textCol,subCol,borderCol,MOODS,usage,setUsage,remaining,goBack,toPaywall,lang}){
   const [form,setForm]=useState({title:"",dream:"",mood:"",location:"",people:"",objects:""});
   const [busy,setBusy]=useState(false);const [errMsg,setErrMsg]=useState("");
   async function analyze(){
@@ -692,9 +723,9 @@ function Analyze({S,C,t,addDream,nav,setSelected,isDark,textCol,subCol,borderCol
     if(!form.dream.trim()){setErrMsg(t.noDesc);return;}
     if(remaining<=0){toPaywall();return;}
     setBusy(true);setErrMsg("");
-    const prompt=SYSTEM_PROMPT+`\n\nDream Title: "${form.title}"\nMood: "${form.mood||"Not specified"}"\nLocation: "${form.location||"Not specified"}"\nPeople: "${form.people||"Not specified"}"\nObjects: "${form.objects||"Not specified"}"\n\nDream:\n"${form.dream}"`;
+    const prompt=SYSTEM_PROMPT(lang)+`\n\nDream Title: "${form.title}"\nMood: "${form.mood||"Not specified"}"\nLocation: "${form.location||"Not specified"}"\nPeople: "${form.people||"Not specified"}"\nObjects: "${form.objects||"Not specified"}"\n\nDream:\n"${form.dream}"`;
     const txt=await callGemini(prompt);
-    const scores=parseScores(txt);
+    const scores=parseScores(txt,form);
     const d={id:Date.now()+Math.random(),title:form.title,dream:form.dream,mood:form.mood,location:form.location,people:form.people,objects:form.objects,timestamp:new Date().toISOString(),interpretation:txt,scores,favorite:false};
     addDream(d);setUsage(u=>({...u,count:u.count+1}));setSelected(d);nav("result");setBusy(false);
   }
@@ -783,9 +814,43 @@ function Result({S,C,t,dream,nav,interpView,setInterpView,isDark,textCol,subCol,
           <div style={{fontSize:"11px",color:subCol,marginBottom:"10px",fontWeight:"600"}}>SHARE & EXPORT</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
             <button style={S.smBtn(C.blue)} onClick={()=>{navigator.clipboard.writeText(dream.interpretation||"");setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?t.copied:t.copy}</button>
-            <button style={S.smBtn("#4caf50")} onClick={()=>window.open(`https://wa.me/?text=${encodeURIComponent("🌙 "+dream.title+"\n\n"+dream.interpretation)}`)}>{t.whatsapp}</button>
+            <button style={S.smBtn("#E1306C")} onClick={()=>{navigator.clipboard.writeText("🌙 "+dream.title+"\n\n"+dream.interpretation);alert("Copied! Now paste it in Instagram.");}}> 📸 Instagram</button>
             <button style={S.smBtn("#2ca5e0")} onClick={()=>window.open(`https://t.me/share/url?text=${encodeURIComponent("🌙 "+dream.title+"\n\n"+dream.interpretation)}`)}>{t.telegram}</button>
-            <button style={S.smBtn(C.purple)} onClick={()=>window.print()}>{t.print}</button>
+            <button style={S.smBtn(C.purple)} onClick={()=>{
+              const w=window.open("","_blank");
+              w.document.write(`<html><head><title>DreamDecoder — ${dream.title}</title><style>
+                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&display=swap');
+                body{font-family:'Inter',sans-serif;max-width:700px;margin:0 auto;padding:40px;background:#fff;color:#1a1a2e}
+                .header{text-align:center;border-bottom:3px solid #c9a84c;padding-bottom:24px;margin-bottom:32px}
+                .logo{font-family:'Playfair Display',serif;font-size:28px;color:#c9a84c;margin-bottom:4px}
+                .tagline{font-size:13px;color:#6a6a9a;letter-spacing:2px;text-transform:uppercase}
+                h2{font-family:'Playfair Display',serif;font-size:22px;color:#1a1a2e;margin:0 0 8px}
+                .meta{font-size:12px;color:#6a6a9a;margin-bottom:32px;text-align:center}
+                .section{border-left:4px solid #c9a84c;padding:16px 20px;margin-bottom:20px;background:#fafafa;border-radius:0 8px 8px 0}
+                .section.psych{border-color:#7cb8d4;background:#f0f7ff}
+                .section.biblical{border-color:#c4956a;background:#fff8f3}
+                .section.advice{border-color:#4caf50;background:#f0fff4}
+                .section-title{font-weight:700;font-size:15px;margin-bottom:10px;color:#1a1a2e}
+                p{font-size:14px;line-height:1.7;margin:0 0 8px;color:#2a2a3e}
+                .scores{display:flex;gap:20px;justify-content:center;margin:24px 0;padding:20px;background:#f8f6f0;border-radius:12px}
+                .score-item{text-align:center}
+                .score-num{font-size:28px;font-weight:700;color:#c9a84c;font-family:'Playfair Display',serif}
+                .score-label{font-size:11px;color:#6a6a9a;text-transform:uppercase;letter-spacing:1px}
+                .disclaimer{font-size:11px;color:#9a9aaa;text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-style:italic}
+                .footer{text-align:center;margin-top:24px;font-size:12px;color:#c9a84c;font-family:'Playfair Display',serif}
+              </style></head><body>
+                <div class="header"><div class="logo">🌙 DreamDecoder</div><div class="tagline">Islamic · Psychology · Biblical</div></div>
+                <h2>${dream.title}</h2>
+                <div class="meta">${fmtFull(dream.timestamp)} ${dream.mood?"· "+dream.mood:""} ${dream.location?"· 📍"+dream.location:""}</div>
+                <div style="background:#f0f0ff;padding:16px;border-radius:8px;margin-bottom:24px;font-size:14px;color:#2a2a3e;line-height:1.7">${dream.dream}</div>
+                ${dream.interpretation.replace(/ISLAMIC VIEW[^\n]*/g,'<div class="section"><div class="section-title">☪️ ISLAMIC VIEW</div>').replace(/PSYCHOLOGICAL VIEW[^\n]*/g,'</div><div class="section psych"><div class="section-title">🧠 PSYCHOLOGICAL VIEW</div>').replace(/BIBLICAL VIEW[^\n]*/g,'</div><div class="section biblical"><div class="section-title">✝️ BIBLICAL VIEW</div>').replace(/SPIRITUAL[^\n]*ADVICE[^\n]*/g,'</div><div class="section advice"><div class="section-title">💡 SPIRITUAL & PRACTICAL ADVICE</div>').replace(/DREAM SCORE[^\n]*/g,'</div><div class="scores">').replace(/Mystery:\s*(\d+)\/10/,'<div class="score-item"><div class="score-num">$1</div><div class="score-label">Mystery</div></div>').replace(/Emotional Intensity:\s*(\d+)\/10/,'<div class="score-item"><div class="score-num">$1</div><div class="score-label">Emotion</div></div>').replace(/Symbol Richness:\s*(\d+)\/10/,'<div class="score-item"><div class="score-num">$1</div><div class="score-label">Symbols</div></div>').replace(/FINAL DISCLAIMER[^\n]*/,'</div><div class="disclaimer">').replace(/\n•/g,'<br>•').replace(/\n/g,'<br>')}
+                </div>
+                <div class="disclaimer">Dream interpretations are symbolic and not guaranteed truths.</div>
+                <div class="footer">🌙 DreamDecoder · dream-decoder-five.vercel.app</div>
+              </body></html>`);
+              w.document.close();
+              setTimeout(()=>w.print(),500);
+            }}>{t.print}</button>
           </div>
         </div>
       </div>
@@ -902,8 +967,14 @@ function Insights({S,C,t,dreams,isDark,textCol,subCol,borderCol,goBack,lang,isPr
   const str=dreams.filter(d=>d.mood&&["Frightening","Stressed","Sad"].some(x=>d.mood.includes(x))).length;
   async function gen(){
     setBusy(true);
-    const sums=dreams.slice(0,10).map(d=>`"${d.title}": ${d.dream.slice(0,80)}`).join("\n");
-    const txt=await callGemini(`Respond in ${lang==="uz"?"Uzbek":lang==="ru"?"Russian":"English"}. You are a compassionate dream analyst. In 3–4 warm sentences, give a personal insight about this person's inner world based on their dreams. Be specific and gentle.\n\nDreams:\n${sums}`);
+    const langName = lang === "uz" ? "Uzbek" : lang === "ru" ? "Russian" : "English";
+    const dreamSummaries = dreams.slice(0,15).map((d,i) =>
+      `Dream ${i+1}: "${d.title}" — ${d.dream.slice(0,120)} [Mood: ${d.mood||"unknown"}]`
+    ).join("\n");
+    const moodSummary = `Positive: ${pos}, Neutral: ${total-pos-str}, Stress: ${str} out of ${total} dreams`;
+    const txt = await callGemini(
+      `You are a compassionate dream analyst. Respond ENTIRELY in ${langName}. Every word must be in ${langName}.\n\nAnalyze ALL ${total} of this person's dreams and provide a deep, personal overall insight about their inner world, emotional state, recurring themes, and spiritual/psychological patterns.\n\nMood summary: ${moodSummary}\n\nAll dreams:\n${dreamSummaries}\n\nWrite 4-5 warm, specific, insightful sentences. Reference specific dreams they had. Be personal and genuine. End with one practical advice.`
+    );
     setInsight(txt);setBusy(false);
   }
   return (
