@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 
 const FB_KEY = "AIzaSyAz0sTQXL6XDaYTNtsskhjzmEXEYSa4P3Y";
-const FB_PROJECT = "dreamdecoder-af2e6// ⚠️ REPLACE YOUR_GEMINI_KEY_HERE with your new Gemini API key from aistudio.google.com
+const FB_PROJECT = "dreamdecoder-af2e6";
 // Do NOT paste the key in chat — add it directly here on GitHub
 
 import { useState, useEffect, useRef } from "react";
